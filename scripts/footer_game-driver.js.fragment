@@ -1,0 +1,3 @@
+
+global.__xha_browserifyRequireChain = require;
+module.exports = require("@akashic/game-driver");
