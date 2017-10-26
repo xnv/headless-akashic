@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "target": "es2015",
+    "module": "commonjs",
+    "types": ["node"],
+    "declaration": true,
+    "outDir": "./lib",
+    "downlevelIteration": true,
+    "noImplicitAny": true,
+    "alwaysStrict": true,
+    "noUnusedLocals": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "moduleResolution": "node"
+  },
+  "files": [
+    "src/index.ts"
+  ]
+}
