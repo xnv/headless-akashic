@@ -73,7 +73,7 @@ export class Context {
 					loopMode: gdr.LoopMode.Realtime
 				},
 				profiler: undefined
-			}, function (e: any) {
+			}, (e: any) => {
 				if (e) return reject(e);
 				this.driver.startGame();
 			});

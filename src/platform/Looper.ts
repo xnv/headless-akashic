@@ -10,7 +10,7 @@ export class Looper {
 	start(): void {
 		this._fun(0);
 		this._prev = Date.now();
-		this._timerId = setInterval(function () {
+		this._timerId = setInterval(() => {
 			const now = Date.now();
 			this._fun(now - this._prev);
 			this._prev = now;
