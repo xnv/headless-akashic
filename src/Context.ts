@@ -1,5 +1,5 @@
 import * as path from "path";
-import * as g from "../drivers/akashic-engine.altered";
+import { Trigger } from "../drivers/akashic-engine.altered";
 import * as gdr from "../drivers/game-driver.altered";
 import { Platform } from "./platform/Platform";
 
@@ -14,16 +14,20 @@ export interface ContextOptions {
 
 // based on js/v2/sandbox.js in akashic-sandbox.
 export class Context {
-	private amflowClient: any;
-	private driver: any;
-	private game: g.Game;
-	private platform: Platform;
+	onCalledExternalSend: Trigger<any>;
+	private _amflowClient: any;
+	private _driver: any;
+	private _game: g.Game;
+	private _platform: Platform;
 	private _xhaGameId: string;
 	private _xhaPlayer: g.Player;
 	private _xhaPlayId: string;
 	private _opts: ContextOptions;
 
+	get game() { return this._game; }
+
 	constructor(opts: ContextOptions = {}) {
+		this.onCalledExternalSend = new Trigger<any>();
 		this._xhaGameId = "xhaDummyGameId";
 		this._xhaPlayer = opts.player || { id: "9999", name: "xha-player" };
 		this._xhaPlayId = "xhaDummyPlayId";
@@ -42,26 +46,30 @@ export class Context {
 			startPoints: null
 		});
 		var gamejsonLoader = (url: string) => opts.gameJsonContent;
-		var pf = new Platform(amflowClient, (opts.gameJsonContent ? gamejsonLoader : undefined));
+		var pf = new Platform({
+			amflow: amflowClient,
+			sendHandler: (pid: string, data: any) => this.onCalledExternalSend.fire(data),
+			gamejsonLoader: (opts.gameJsonContent ? gamejsonLoader : undefined)
+		});
 		var driver = new gdr.GameDriver({
 			platform: pf,
 			player: this._xhaPlayer,
 			errorHandler: function (e: any) { console.log("ERRORHANDLER:", e); }
 		});
 
-		this.amflowClient = amflowClient;
-		this.driver = driver;
-		this.game = null;
-		this.platform = pf;
+		this._amflowClient = amflowClient;
+		this._driver = driver;
+		this._game = null;
+		this._platform = pf;
 	}
 
 	start(): Promise<g.Game> {
 		return new Promise<g.Game>((resolve, reject) => {
-			this.driver.gameCreatedTrigger.add((game: g.Game) => {
-				this.game = game;
+			this._driver.gameCreatedTrigger.add((game: g.Game) => {
+				this._game = game;
 				game._started.add(() => resolve(game));
 			});
-			this.driver.initialize({
+			this._driver.initialize({
 				configurationUrl: path.resolve(this._opts.gameDir, "game.json"),
 				assetBase: this._opts.gameDir,
 				driverConfiguration: {
@@ -75,15 +83,16 @@ export class Context {
 				profiler: undefined
 			}, (e: any) => {
 				if (e) return reject(e);
-				this.driver.startGame();
+				this._driver.startGame();
 			});
 		});
 	}
 
 	end(): void {
-		this.driver.stopGame();
-		this.driver = null;
-		this.game = null;
-		this.amflowClient = null;
+		this._driver.stopGame();
+		this._driver = null;
+		this._game = null;
+		this._amflowClient = null;
+		this._platform = null;
 	}
 }

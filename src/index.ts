@@ -1,3 +1,3 @@
-import * as g from "../drivers/akashic-engine.altered";
-export { g };
+import * as ae from "../drivers/akashic-engine.altered";
+export { ae };
 export * from "./Context";

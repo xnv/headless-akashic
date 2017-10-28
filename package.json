@@ -7,7 +7,7 @@
   "scripts": {
     "pick": "node scripts/pick-drivers.js",
     "build": "tsc -p ./",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "tsc -p ./spec/ && jasmine"
   },
   "keywords": [],
   "author": "xnv",
@@ -15,7 +15,9 @@
   "devDependencies": {
     "@akashic/akashic-engine": "2.0.0",
     "@akashic/akashic-sandbox": "0.13.4",
+    "@types/jasmine": "~2.6.2",
     "@types/node": "~8.0.47",
+    "jasmine": "~2.8.0",
     "shelljs": "~0.7.8",
     "typescript": "~2.5.3"
   }

@@ -4,6 +4,12 @@ import { NodeTextAsset } from "./NodeTextAsset";
 import { NullSurface } from "./NullSurface";
 import { Looper } from "./Looper";
 
+export interface PlatformArgument {
+	amflow: any;
+	sendHandler: (playId: string, data: any) => void;
+	gamejsonLoader?: (url: string) => any;
+}
+
 export class Platform {
 	amflow: any;
 
@@ -11,15 +17,17 @@ export class Platform {
 	private _rendererReq: any;
 	private _primarySurface: g.Surface;
 	private _eventHandler: any;
+	private _sendHandler: (playId: string, data: any) => void;
 	private _gamejsonLoader: (url: string) => any;
 
-	constructor(amflow: any, gamejsonLoader?: (url: string) => any) {
-		this.amflow = amflow;
+	constructor(param: PlatformArgument) {
+		this.amflow = param.amflow;
 		this._resFac = new ResourceFactory();
 		this._rendererReq = null;
 		this._primarySurface = null;
 		this._eventHandler = null;
-		this._gamejsonLoader = gamejsonLoader;
+		this._sendHandler = param.sendHandler;
+		this._gamejsonLoader = param.gamejsonLoader;
 	}
 
 	setPlatformEventHandler(handler: any): void {
@@ -60,7 +68,7 @@ export class Platform {
 	}
 
 	sendToExternal(playId: any, data: any): void {
-		// do nothing
+		this._sendHandler(playId, data);
 	}
 
 	registerAudioPlugins(plugins: any): void {}
