@@ -82,7 +82,7 @@ ctx.start().then((game: g.Game) => {
 });
 ```
 
-### `g`
+### The global variable `g`
 
 In practice, you can do nothing if you have only the game instance.
 You need `g`, for instance, to create a scene.
@@ -161,5 +161,8 @@ Must be called after `firePointDown()`.
 
 ## Limitation
 
+- `g.game` is not provided in `g` introduced by `"@xnv/headless-akashic/polyfill"` 
 - `g.Storage` and related functions are not supported.
 
+[sandbox]: https://github.com/akashic-games/akashic-sandbox
+[jasmine]: https://github.com/jasmine/jasmine-npm
