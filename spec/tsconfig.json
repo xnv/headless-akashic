@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "target": "es2015",
+    "module": "commonjs",
+    "types": ["node", "jasmine"],
+    "declaration": true,
+    "outDir": "./lib",
+    "downlevelIteration": true,
+    "noImplicitAny": true,
+    "alwaysStrict": true,
+    "noUnusedLocals": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "moduleResolution": "node"
+  },
+  "include": [
+    "../node_modules/@akashic/akashic-engine/lib/main.d.ts",
+    "src/**/*.ts"
+  ]
+}

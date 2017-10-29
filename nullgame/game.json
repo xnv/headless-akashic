@@ -1,0 +1,13 @@
+{
+	"fps": 30,
+	"width": 640,
+	"height": 480,
+	"main": "./nullmain.js",
+	"assets": {
+		"nullmain": {
+			"type": "script",
+			"path": "nullmain.js",
+			"global": "true"
+		}
+	}
+}

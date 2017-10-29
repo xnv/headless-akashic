@@ -1,0 +1,27 @@
+{
+  "name": "@xnv/headless-akashic",
+  "version": "0.0.1-beta.0",
+  "private": true,
+  "description": "",
+  "main": "lib/index.js",
+  "scripts": {
+    "pick": "node scripts/pick-drivers.js",
+    "build": "tsc -p ./",
+    "test": "tsc -p ./spec/ && jasmine"
+  },
+  "keywords": [],
+  "author": "xnv",
+  "license": "MIT",
+  "peerDependencies": {
+    "@akashic/akashic-engine": "~2.0.0"
+  },
+  "devDependencies": {
+    "@akashic/akashic-engine": "2.0.0",
+    "@akashic/akashic-sandbox": "0.13.4",
+    "@types/jasmine": "~2.6.2",
+    "@types/node": "~8.0.47",
+    "jasmine": "~2.8.0",
+    "shelljs": "~0.7.8",
+    "typescript": "~2.5.3"
+  }
+}
