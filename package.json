@@ -1,9 +1,9 @@
 {
   "name": "@xnv/headless-akashic",
-  "version": "0.0.0",
+  "version": "0.0.1-beta.0",
   "private": true,
   "description": "",
-  "main": "index.js",
+  "main": "lib/index.js",
   "scripts": {
     "pick": "node scripts/pick-drivers.js",
     "build": "tsc -p ./",
@@ -12,6 +12,9 @@
   "keywords": [],
   "author": "xnv",
   "license": "MIT",
+  "peerDependencies": {
+    "@akashic/akashic-engine": "~2.0.0"
+  },
   "devDependencies": {
     "@akashic/akashic-engine": "2.0.0",
     "@akashic/akashic-sandbox": "0.13.4",

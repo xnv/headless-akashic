@@ -14,6 +14,17 @@ describe("Context", function () {
 		}, done.fail);
 	});
 
+	it("can override game.json", function (done: DoneFn) {
+		const ctx = new Context({ overrideGameJson: { width: 200, fps: 60 } });
+		ctx.start().then((game: g.Game) => {
+			expect(game.fps).toBe(60);
+			expect(game.width).toBe(200);
+			expect(game.height).toBe(480); // must be untouched nullgame/game.json
+			ctx.end();
+			done();
+		}, done.fail);
+	});
+
 	it("can run a game and trap game.external.send()", function (done: DoneFn) {
 		const ctx = new Context({
 			gameDir: path.resolve(__dirname, "..", "fixture", "testgame")
@@ -25,7 +36,7 @@ describe("Context", function () {
 			done();
 		});
 		ctx.start().then((game: g.Game) => {
-			// must be identical with nullgame/game.json
+			// must be identical with fixture/testgame/game.json
 			expect(game.fps).toBe(30);
 			expect(game.width).toBe(320);
 			expect(game.height).toBe(320);

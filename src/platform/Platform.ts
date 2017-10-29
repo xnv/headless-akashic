@@ -7,7 +7,7 @@ import { Looper } from "./Looper";
 export interface PlatformArgument {
 	amflow: any;
 	sendHandler: (playId: string, data: any) => void;
-	gamejsonLoader?: (url: string) => any;
+	gamejsonModifier?: (gamejson: any) => any;
 }
 
 export class Platform {
@@ -18,7 +18,7 @@ export class Platform {
 	private _primarySurface: g.Surface;
 	private _eventHandler: any;
 	private _sendHandler: (playId: string, data: any) => void;
-	private _gamejsonLoader: (url: string) => any;
+	private _gamejsonModifier: (gamejson: any) => any;
 
 	constructor(param: PlatformArgument) {
 		this.amflow = param.amflow;
@@ -27,7 +27,7 @@ export class Platform {
 		this._primarySurface = null;
 		this._eventHandler = null;
 		this._sendHandler = param.sendHandler;
-		this._gamejsonLoader = param.gamejsonLoader;
+		this._gamejsonModifier = param.gamejsonModifier || ((data: any) => data);
 	}
 
 	setPlatformEventHandler(handler: any): void {
@@ -35,11 +35,9 @@ export class Platform {
 	}
 
 	loadGameConfiguration(url: string, callback: (err: Error, data: Object) => void): void {
-		if (this._gamejsonLoader)
-			return void setTimeout(() => callback(null, this._gamejsonLoader(url)), 0);
 		const a = new NodeTextAsset("(game.json)", url);
 		a._load({
-			_onAssetLoad: (asset: g.Asset) => callback(null, JSON.parse(a.data)),
+			_onAssetLoad: (asset: g.Asset) => callback(null, this._gamejsonModifier(JSON.parse(a.data))),
 			_onAssetError: (asset: g.Asset, error: any) => callback(error, null)
 		});
 	}

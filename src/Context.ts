@@ -5,7 +5,7 @@ import { Platform } from "./platform/Platform";
 
 export interface ContextOptions {
 	gameDir?: string;
-	gameJsonContent?: Object;
+	overrideGameJson?: any;
 	player?: {
 		id: string;
 		name?: string;
@@ -34,7 +34,7 @@ export class Context {
 
 		this._opts = {
 			gameDir: opts.gameDir || path.resolve(__dirname, "..", "nullgame"),
-			gameJsonContent: opts.gameJsonContent
+			overrideGameJson: opts.overrideGameJson
 		};
 
 		// var storage = new gameStorage.GameStorage(window.localStorage, { gameId: this._xhaGameId });
@@ -45,11 +45,15 @@ export class Context {
 			tickList: null,
 			startPoints: null
 		});
-		var gamejsonLoader = (url: string) => opts.gameJsonContent;
+		var gamejsonModifier = (data: any) => {
+			if (opts.overrideGameJson)
+				Object.keys(opts.overrideGameJson).forEach(k => (data[k] = opts.overrideGameJson[k]));
+			return data;
+		};
 		var pf = new Platform({
 			amflow: amflowClient,
 			sendHandler: (pid: string, data: any) => this.onCalledExternalSend.fire(data),
-			gamejsonLoader: (opts.gameJsonContent ? gamejsonLoader : undefined)
+			gamejsonModifier
 		});
 		var driver = new gdr.GameDriver({
 			platform: pf,
@@ -94,5 +98,28 @@ export class Context {
 		this._game = null;
 		this._amflowClient = null;
 		this._platform = null;
+	}
+
+	firePointDown(x: number, y: number, identifier?: number): void { this._platform.doPointDown(x, y, identifier); }
+	firePointMove(x: number, y: number, identifier?: number): void { this._platform.doPointMove(x, y, identifier); }
+	firePointUp(x: number, y: number, identifier?: number): void { this._platform.doPointUp(x, y, identifier); }
+
+	firePointDownMovesUp(interval: number, points: g.CommonOffset[], identifier?: number): void {
+		if (points.length < 2)
+			throw new Error("Context#firePointDownMovesUp: invalid argument");
+		let ps = points.concat();
+		let down = ps.shift();
+		let up = ps.pop();
+		this.firePointDown(down.x, down.y, identifier);
+		let i = 0;
+		const timer = setInterval(() => {
+			const p = ps[i++];
+			if (p) {
+				this.firePointMove(p.x, p.y, identifier);
+			} else {
+				this.firePointUp(up.x, up.y, identifier);
+				clearInterval(timer);
+			}
+		}, interval);
 	}
 }
