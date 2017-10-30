@@ -1,7 +1,7 @@
 # headless-akashic
 
-**headless-akashic** is a headless version of [Akashic Sandbox][sandbox].
-You can run games using [Akashic Engine][ae] on [Node.js][node], without Web browsers.
+**headless-akashic** is a headless version of [Akashic Sandbox (ja)][sandbox].
+You can run games using [Akashic Engine (ja)][ae] on [Node.js][node], without Web browsers.
 Useful for unit testing.
 
 > Unfortunately, Akashic Engine does not provide English documentation yet.
@@ -22,7 +22,7 @@ Useful for unit testing.
 
 MIT. See [LICENSE][license].
 
-Some files in the `drivers/` directory are derived from [Akashic Sandbox][sandbox].
+Some files in the `drivers/` directory are derived from [Akashic Sandbox (ja)][sandbox].
 See [LICENSE-DRIVERS][license-drivers] for detail.
 
 [sandbox]: https://github.com/akashic-games/akashic-sandbox
