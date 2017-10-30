@@ -10,13 +10,14 @@ Useful for unit testing.
 
 ## Features
 
-- A complete emulation of a `g.Game` instance
+- Almost complete emulation of a `g.Game` instance
 - Point events emulation through API
 - (Screenshot API) (planned but NOT YET)
 
 ## Documents
 
-- [Guide][guide] or [利用ガイド (ja)][guide-ja]
+- [Guide][guide]
+- [利用ガイド (ja)][guide-ja]
 
 ## License
 
@@ -29,5 +30,6 @@ See [LICENSE-DRIVERS][license-drivers] for detail.
 [ae]: https://akashic-games.github.io/
 [node]: https://nodejs.org/
 [guide]: https://github.com/xnv/headless-akashic/blob/master/doc/guide.en.md
+[guide-ja]: https://github.com/xnv/headless-akashic/blob/master/doc/guide.ja.md
 [license]: https://github.com/xnv/headless-akashic/blob/master/LICENSE
 [license-drivers]: https://github.com/xnv/headless-akashic/blob/master/LICENSE-DRIVERS
