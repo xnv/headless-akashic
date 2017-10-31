@@ -6,11 +6,12 @@
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "scripts": {
+    "prepublish": "npm run build",
     "pick": "node scripts/pick-drivers.js",
     "build": "tsc -p ./",
     "test": "tsc -p ./spec/ && jasmine"
   },
-  "keywords": [],
+  "keywords": ["akashic-engine"],
   "author": "xnv",
   "license": "MIT",
   "files": [
