@@ -4,6 +4,7 @@
   "private": true,
   "description": "",
   "main": "lib/index.js",
+  "typings": "lib/index.d.ts",
   "scripts": {
     "pick": "node scripts/pick-drivers.js",
     "build": "tsc -p ./",
@@ -12,9 +13,17 @@
   "keywords": [],
   "author": "xnv",
   "license": "MIT",
-  "peerDependencies": {
-    "@akashic/akashic-engine": "~2.0.0"
-  },
+  "files": [
+    "package.json",
+    "README",
+    "LICENSE",
+    "LICENSE-DRIVERS",
+    "drivers/",
+    "nullgame/",
+    "lib/",
+    "polyfill.js",
+    "polyfill.d.ts"
+  ],
   "devDependencies": {
     "@akashic/akashic-engine": "2.0.0",
     "@akashic/akashic-sandbox": "0.13.4",

@@ -20,5 +20,6 @@ sh.cat(
 	path.resolve(__dirname, "footer_game-driver.js.fragment")
 ).to(path.resolve(dest, "game-driver.altered.js"));
 
+sh.cp(path.resolve(akashicEngineRoot, "lib", "main.d.ts"), path.resolve(dest, "akashic-engine.main.d.ts"));
 sh.cp(path.resolve(akashicEngineRoot, "lib", "main.node.d.ts"), path.resolve(dest, "akashic-engine.altered.d.ts"));
 sh.cp(path.resolve(__dirname, "game-driver.altered.d.ts.template"), path.resolve(dest, "game-driver.altered.d.ts"));
