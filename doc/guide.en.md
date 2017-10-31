@@ -1,19 +1,22 @@
 # headless-akashic Guide
 
-**headless-akashic** is a headless version of [Akashic Sandbox][sandbox].
+**headless-akashic** is a headless version of [Akashic Sandbox (ja)][sandbox].
+You can run games using [Akashic Engine (ja)][ae] on [Node.js][node], without Web browsers.
 Useful for unit testing.
 
 ## Why?
 
-Testing contents built on Akashic Engine is not easy.
+Testing contents built on Akashic Engine is not easy in general.
 You can examine the behaviour of your game with `akashic-sandbox` but it is hard to be automated.
 Everytime you modify the code you need to run the game, click appropriate points on the screen,
 wait for a while and finally see the world is not broken.
 
 This is too painful, especially for library development
 because their expected behaviour is clear and stable in many cases.
+We need to test them.
 
 headless-akashic is here for you.
+
 It provides `g` and a `g.Game` instance in the Node.js environment.
 Using given `Game` instance, you can write unit tests with any test framework such as [Jasmine][jasmine].
 
@@ -57,12 +60,12 @@ Specify the path to a directory containing `game.json` to the `gameDir` property
 Then calling `start()` method launches the game in the directory.
 In this example, the execution stops after five seconds by `end()`.
 
-NOTE: this is simple but currently not very useful.
+**NOTE**: this is simple but currently not very useful.
 Because the current headless-akashic provides only null implementation of `g.Renderer` and `g.AudioPlayer`.
 This means no visual/audio output will be generated.
 You can use this option only to check that the content causes no runtime exception.
 
-A more useful `g.Renderer` implementation is planned to be implemented.
+A more useful `g.Renderer` is planned to be implemented.
 
 ### A bare `g.Game` Instance
 
@@ -113,8 +116,8 @@ ctx.start().then((game: g.Game) => {
 
 NOTE: This object `g` provides anything in Akashic Engine but `g.game`.
 This is an inevitable limitation.
-I recommend to not depend on `g.game` if you are developing a library (reusable code).
-Akashic Engine does not depend on `g.game` to implement entities.
+Because the game instance is not unique here.
+Unlike in script assets, two or more `g.Game` objects can be instantiated in parallel.
 
 ## API
 
@@ -147,17 +150,20 @@ Available after the `Promise` returned by `start()` resolved.
 Fire `pointDown` trigger of the touchable frontmost entity at (x, y).
 If no entity found, fire `Scene#pointDownCapture`.
 
-Must be followed by `firePointUp()` when calling more than once on the same `identifier`.
+The `identifier` is a optional number to distinguish finger (to emulate multi-touch device).
+If not specified, will be treated as `1`.
+
+Must follows `firePointUp()` when calling more than once on the same `identifier`.
 
 ### Context#firePointMove(x, y, identifier)
 
-Fire `pointMove` trigger of the touchable frontmost entity.
-Must be called after `firePointDown()`.
+Fire `pointMove` trigger of the recent `pointDown`'ed entity.
+Must follows `firePointDown()` if called.
 
 ### Context#firePointUp(x, y, identifier)
 
-Fire `pointUp` trigger of the touchable frontmost entity.
-Must be called after `firePointDown()`.
+Fire `pointUp` trigger of the recent `pointDown`'ed entity.
+Must follows `firePointDown()` if called.
 
 ## Limitation
 
