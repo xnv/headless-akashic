@@ -1,6 +1,6 @@
 {
   "name": "@xnv/headless-akashic",
-  "version": "0.0.1-beta.1",
+  "version": "0.0.1",
   "description": "A headless version of Akashic Engine",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
