@@ -28,12 +28,12 @@ Use npm. To install as `"devDependencies"`:
 npm i -DE @xnv/headless-akashic@0.0.1
 ```
 
-Installing with `-E` (`--save-exact`) is recommended since **it has peerDepenendency for Akashic Engine**.
-Choose an appropriate version for your content.
+The engine implementation provided by headless-akashic is identical to a specific version of akashic-sandbox.
+Choose appropriate one.
 
-|@akashic/akashic-engine|the latest matching version|
-|:---------------------:|:-------------------------:|
-|~2.0.0|0.0.1|
+|version|@akashic/akashic-sandbox|@akashic/akashic-engine:|
+|:-----:|:----------------------:|:----------------------:|
+|0.0.1  |0.13.4                  |2.0.0                   |
 
 ## Usage
 
@@ -119,6 +119,25 @@ This is an inevitable limitation.
 Because the game instance is not unique here.
 Unlike in script assets, two or more `g.Game` objects can be instantiated in parallel.
 
+### Note for TypeScript Users
+
+In general, you need to add the type declaration of Akashic Engine
+(i.e. `@akashic/akashic-engine/lib/main.d.ts`) to your compile targets
+when you write your game in TypeScript (to resolve the type of `g`).
+
+But this is not the case for headless-akashic.
+You *SHOULD NOT* include `main.d.ts` manually because
+it will be introduced by `@xnv/headless-akashic/polyfill` automatically.
+Because the version of `akashic-engine` is determined by the headless-akashic,
+the appropriate `main.d.ts` is also determined by headless-akashic itself.
+
+Note that if you are using headless-akashic in unit tests, the following situation may occur:
+
+* tsconfig.json for building the content refers `main.d.ts` explicitly (`g` is resolved by `main.d.ts`), and
+* tsconfig.json for test code does not refer `main.d.ts` (`g` for tests and the content resolved by headless-akashic).
+
+If your code fails to compile only with headless-akashic then you might use an inconsistent version of headless-akashic.
+
 ## API
 
 ### new Context(opts)
@@ -150,7 +169,7 @@ Available after the `Promise` returned by `start()` resolved.
 Fire `pointDown` trigger of the touchable frontmost entity at (x, y).
 If no entity found, fire `Scene#pointDownCapture`.
 
-The `identifier` is a optional number to distinguish finger (to emulate multi-touch device).
+The `identifier` is an optional number to distinguish finger (to emulate multi-touch device).
 If not specified, will be treated as `1`.
 
 Must follows `firePointUp()` when calling more than once on the same `identifier`.

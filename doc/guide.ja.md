@@ -9,16 +9,15 @@ Node.js上で、WebブラウザなしにAkashic Engineのゲームを動かす�
 npmでインストールできます。 `"devDependencies"` に導入するには:
 
 ```
-npm i -DE @xnv/headless-akashic@0.0.1
+npm i -D @xnv/headless-akashic
 ```
 
-`-E` (`--save-exact`) オプション付きでインストールすることを推奨します。
-このライブラリは **peerDependencies に Akashic Engine を指定している** ためです。
-コンテンツが利用するエンジンのバージョンに合わせて、適切なバージョンを選択してください。
+headless-akashic の提供するエンジン実装は、akashic-sandbox のいずれかのバージョンと同一になっています。
+適切なバージョンを選択してください。
 
-|@akashic/akashic-engine|対応する最新のバージョン|
-|:---------------------:|:----------------------:|
-|~2.0.0|0.0.1|
+|バージョン|@akashic/akashic-sandbox|@akashic/akashic-engine:|
+|:--------:|:----------------------:|:----------------------:|
+|0.0.1     |0.13.4                  |2.0.0                   |
 
 ## 利用法
 
@@ -102,6 +101,24 @@ ctx.start().then((game: g.Game) => {
 注意: この `g` はAkashic Engineが提供するものをすべて提供しますが、これには `g.game` は含まれません。
 これは不可避の制限です。
 スクリプトアセットの実行中と異なり、ユニットテストコードにおいては `g.Game` のインスタンスが一つとは限らないためです。
+
+### TypeScript で利用する場合の注意
+
+TypeScirpt でゲームを開発する場合、通常Akashic Engineの型定義ファイル
+(i.e. `@akashic/akashic-engine/lib/main.d.ts`) をコンパイル対象に含める必要があります(`g` の型を解決するため)。
+
+しかし headless-akashic を利用する場合、これは当てはまりません。
+`main.d.ts` を手動で導入 **しないでください** 。
+`@xnv/headless-akashic/polyfill` をimportすると、適切な型定義ファイルが自動的に参照されます。
+このようになっているのは、提供されるエンジン実装(`akashic-engine`)のバージョンが headless-akashic によって定まるからです。
+
+headless-akashic をユニットテストで使う場合、次のような状況が起こり得る点に注意してください。
+
+* コンテンツのビルド用の tsconfig.json では `main.d.ts` を明示的に参照する (`g` は `main.d.ts` によって解決される)
+* テストコード用の tsconfig.json では `main.d.ts` を参照しない (テストコードとコンテンツの `g` は headless-akashic 内蔵の型定義で解決される)
+
+もし headless-akashic と合わせてコンパイルした時にだけコンパイルに失敗するのであれば、
+コンテンツのビルド時に利用した akashic-engine と対応しないバージョンの headless-akashic を利用している可能性があります。
 
 ## API
 
