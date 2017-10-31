@@ -190,4 +190,6 @@ Must follows `firePointDown()` if called.
 - `g.Storage` and related functions are not supported.
 
 [sandbox]: https://github.com/akashic-games/akashic-sandbox
+[ae]: https://akashic-games.github.io/
+[node]: https://nodejs.org/
 [jasmine]: https://github.com/jasmine/jasmine-npm

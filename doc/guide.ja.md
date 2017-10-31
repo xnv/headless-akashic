@@ -1,7 +1,7 @@
 # headless-akashic ガイド
 
 **headless-akashic** は、ヘッドレス(headless)の[Akashic Sandbox][sandbox] です。
-Node.js上で、WebブラウザなしにAkashic Engineのゲームを動かすことができます。
+[Node.js][node]上で、Webブラウザなしに[Akashic Engine][ae]のゲームを動かすことができます。
 ユニットテストに利用することを想定しています。
 
 ## インストール
@@ -171,5 +171,7 @@ headless-akashic をユニットテストで使う場合、次のような状況
 - `g.Storage` と関連する機能は未サポートです。
 
 [sandbox]: https://github.com/akashic-games/akashic-sandbox
+[node]: https://nodejs.org/
+[ae]: https://akashic-games.github.io/
 [jasmine]: https://github.com/jasmine/jasmine-npm
 
