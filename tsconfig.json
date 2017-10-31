@@ -15,7 +15,6 @@
     "moduleResolution": "node"
   },
   "files": [
-    "node_modules/@akashic/akashic-engine/lib/main.d.ts",
     "src/index.ts"
   ]
 }
