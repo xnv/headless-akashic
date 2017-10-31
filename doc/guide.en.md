@@ -25,15 +25,15 @@ Using given `Game` instance, you can write unit tests with any test framework su
 Use npm. To install as `"devDependencies"`:
 
 ```
-npm i -DE @xnv/headless-akashic@0.0.1
+npm i -DE @xnv/headless-akashic
 ```
 
 The engine implementation provided by headless-akashic is identical to a specific version of akashic-sandbox.
 Choose appropriate one.
 
-|version|@akashic/akashic-sandbox|@akashic/akashic-engine:|
-|:-----:|:----------------------:|:----------------------:|
-|0.0.1  |0.13.4                  |2.0.0                   |
+|version|@akashic/akashic-sandbox|@akashic/akashic-engine|
+|:-----:|:----------------------:|:---------------------:|
+|0.0.1  |0.13.4                  |2.0.0                  |
 
 ## Usage
 

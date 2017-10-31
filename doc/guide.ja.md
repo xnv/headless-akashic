@@ -15,9 +15,9 @@ npm i -D @xnv/headless-akashic
 headless-akashic の提供するエンジン実装は、akashic-sandbox のいずれかのバージョンと同一になっています。
 適切なバージョンを選択してください。
 
-|バージョン|@akashic/akashic-sandbox|@akashic/akashic-engine:|
-|:--------:|:----------------------:|:----------------------:|
-|0.0.1     |0.13.4                  |2.0.0                   |
+|バージョン|@akashic/akashic-sandbox|@akashic/akashic-engine|
+|:--------:|:----------------------:|:---------------------:|
+|0.0.1     |0.13.4                  |2.0.0                  |
 
 ## 利用法
 
