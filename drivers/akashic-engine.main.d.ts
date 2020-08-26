@@ -25,7 +25,7 @@ declare namespace g {
         /**
          * サーバ側のエラー。HTTP 5XX など。
          */
-        ServerError = 4,
+        ServerError = 4
     }
 }
 declare namespace g {
@@ -128,6 +128,11 @@ declare namespace g {
          */
         abstract createGlyphFactory(fontFamily: FontFamily | string | (g.FontFamily | string)[], fontSize: number, baselineHeight?: number, fontColor?: string, strokeWidth?: number, strokeColor?: string, strokeOnly?: boolean, fontWeight?: FontWeight): GlyphFactory;
         createSurfaceAtlas(width: number, height: number): SurfaceAtlas;
+        /**
+         * 指定Surfaceから指定範囲を切り取ったSurfaceを返す。
+         * 範囲を指定しない場合は、指定SurfaceをコピーしたSurfaceを返す。
+         */
+        createTrimmedSurface(targetSurface: Surface, targetArea?: CommonArea): Surface;
     }
 }
 declare namespace g {
@@ -225,7 +230,18 @@ declare namespace g {
          */
         0?: RandomGenerator;
         constructor(seed: number);
+        /**
+         * 指定された範囲の整数の疑似乱数を生成する。
+         * 生成される値は両端を含む(i.e. [min, max])ことに注意。
+         *
+         * @param min 生成する疑似乱数の最小値
+         * @param max 生成する疑似乱数の最大値
+         */
         abstract get(min: number, max: number): number;
+        /**
+         * 0 以上 1 未満の疑似乱数を生成する。
+         */
+        abstract generate(): number;
         abstract serialize(): any;
     }
 }
@@ -253,7 +269,7 @@ declare namespace g {
         /**
          * 軽量な描画処理を利用できることを示すフラグ。
          */
-        ContextLess = 8,
+        ContextLess = 8
     }
 }
 declare namespace g {
@@ -332,8 +348,10 @@ declare namespace g {
     abstract class ImageAsset extends Asset {
         width: number;
         height: number;
+        hint: ImageAssetHint;
         constructor(id: string, assetPath: string, width: number, height: number);
         abstract asSurface(): Surface;
+        initialize(hint: ImageAssetHint): void;
     }
     /**
      * 動画リソースを表すクラス。
@@ -517,6 +535,11 @@ declare namespace g {
             [path: string]: string;
         };
         /**
+         * requireの第一引数から対応する仮想パスを引くためのテーブル。
+         * @private
+         */
+        _moduleMainScripts: ModuleMainScriptsMap;
+        /**
          * 各アセットに対する参照の数。
          * 参照は requestAssets() で増え、unrefAssets() で減る。
          * なおロード中であっても参照に数える。つまり (this._refCounts[id] > 1) であるなら !!(this._assets[id] || this._loadings[id])
@@ -535,7 +558,7 @@ declare namespace g {
          * @param game このインスタンスが属するゲーム
          * @param conf このアセットマネージャに与えるアセット定義。game.json の `"assets"` に相当。
          */
-        constructor(game: Game, conf?: AssetConfigurationMap, audioSystemConfMap?: AudioSystemConfigurationMap);
+        constructor(game: Game, conf?: AssetConfigurationMap, audioSystemConfMap?: AudioSystemConfigurationMap, moduleMainScripts?: ModuleMainScriptsMap);
         /**
          * このインスタンスを破棄する。
          */
@@ -798,6 +821,19 @@ declare namespace g {
          */
         update(width: number, height: number, scaleX: number, scaleY: number, angle: number, x: number, y: number): void;
         /**
+         * 2D object利用の一般的な値を基に変換行列の値をアンカーを用いて再計算する。
+         * @param width 対象の横幅
+         * @param heigth 対象の縦幅
+         * @param scaleX 対象の横方向への拡大率
+         * @param scaleY 対象の縦方向への拡大率
+         * @param angle 角度。単位は `degree` であり `radian` ではない
+         * @param x x座標
+         * @param y y座標
+         * @param anchorX アンカーの横位置。単位は相対値(左端が 0、中央が 0.5、右端が 1.0)である。
+         * @param anchorY アンカーの縦位置。単位は相対値(上端が 0、中央が 0.5、下端が 1.0)である。
+         */
+        updateWithAnchor(width: number, height: number, scaleX: number, scaleY: number, angle: number, x: number, y: number, anchorX: number, anchorY: number): void;
+        /**
          * `update()` によって得られる行列の逆変換になるよう変換行列の値を再計算する。
          * @param width 対象の横幅
          * @param heigth 対象の縦幅
@@ -808,6 +844,19 @@ declare namespace g {
          * @param y y座標
          */
         updateByInverse(width: number, height: number, scaleX: number, scaleY: number, angle: number, x: number, y: number): void;
+        /**
+         * `updateWithAnchor()` によって得られる行列の逆変換になるよう変換行列の値を再計算する。
+         * @param width 対象の横幅
+         * @param heigth 対象の縦幅
+         * @param scaleX 対象の横方向への拡大率
+         * @param scaleY 対象の縦方向への拡大率
+         * @param angle 角度。単位は `degree` であり `radian` ではない
+         * @param x x座標
+         * @param y y座標
+         * @param anchorX アンカーの横位置。単位は相対値(左端が 0、中央が 0.5、右端が 1.0)である。
+         * @param anchorY アンカーの縦位置。単位は相対値(上端が 0、中央が 0.5、下端が 1.0)である。
+         */
+        updateByInverseWithAnchor(width: number, height: number, scaleX: number, scaleY: number, angle: number, x: number, y: number, anchorX: number, anchorY: number): void;
         /**
          * 値を単位行列にリセットする。x/yの座標情報を初期値に反映させることも出来る。
          * @param x x座標。省略時は0として処理される
@@ -861,14 +910,18 @@ declare namespace g {
          * @param scaleX 対象の横方向への拡大率
          * @param scaleY 対象の縦方向への拡大率
          * @param angle 角度。単位は `degree` であり `radian` ではない
+         * @param anchorX アンカーの横位置。単位は相対値(左端が 0、中央が 0.5、右端が 1.0)である。
+         * @param anchorY アンカーの縦位置。単位は相対値(上端が 0、中央が 0.5、下端が 1.0)である。
          */
-        constructor(width: number, height: number, scaleX: number, scaleY: number, angle: number);
+        constructor(width: number, height: number, scaleX: number, scaleY: number, angle: number, anchorX?: number, anchorY?: number);
         /**
          * 指定の `Matrix` と同じ変換行列を表す `PlainMatrix` のインスタンスを生成する。
          */
         constructor(src: Matrix);
         update(width: number, height: number, scaleX: number, scaleY: number, angle: number, x: number, y: number): void;
+        updateWithAnchor(width: number, height: number, scaleX: number, scaleY: number, angle: number, x: number, y: number, anchorX: number, anchorY: number): void;
         updateByInverse(width: number, height: number, scaleX: number, scaleY: number, angle: number, x: number, y: number): void;
+        updateByInverseWithAnchor(width: number, height: number, scaleX: number, scaleY: number, angle: number, x: number, y: number, anchorX: number, anchorY: number): void;
         multiply(matrix: Matrix): void;
         multiplyNew(matrix: Matrix): Matrix;
         reset(x?: number, y?: number): void;
@@ -916,8 +969,10 @@ declare namespace g {
          * @param scaleX 対象の横方向への拡大率
          * @param scaleY 対象の縦方向への拡大率
          * @param angle 角度。単位はdegreeでありradianではない
+         * @param anchorX アンカーの横位置。単位は相対値(左端が 0、中央が 0.5、右端が 1.0)である。
+         * @param anchorY アンカーの縦位置。単位は相対値(上端が 0、中央が 0.5、下端が 1.0)である。
          */
-        function createMatrix(width: number, height: number, scaleX: number, scaleY: number, angle: number): Matrix;
+        function createMatrix(width: number, height: number, scaleX: number, scaleY: number, angle: number, anchorX?: number, anchorY?: number): Matrix;
         /**
          * e の描画内容を持つ Sprite を生成する。
          * @param scene 作成したSpriteを登録するScene
@@ -1468,8 +1523,8 @@ declare namespace g {
         /**
          * 再生を停止する。
          *
-         * 再生中でない場合、何もしない。
          * 停止後、 `this.stopped` がfireされる。
+         * 再生中でない場合、何もしない(`stopped` もfireされない)。
          */
         stop(): void;
         /**
@@ -1559,6 +1614,10 @@ declare namespace g {
         /**
          * @private
          */
+        _reset(): void;
+        /**
+         * @private
+         */
         _setMuted(value: boolean): void;
         /**
          * @private
@@ -1599,6 +1658,10 @@ declare namespace g {
         /**
          * @private
          */
+        _reset(): void;
+        /**
+         * @private
+         */
         _onVolumeChanged(): void;
         /**
          * @private
@@ -1627,6 +1690,10 @@ declare namespace g {
         createPlayer(): AudioPlayer;
         findPlayers(asset: AudioAsset): AudioPlayer[];
         stopAll(): void;
+        /**
+         * @private
+         */
+        _reset(): void;
         /**
          * @private
          */
@@ -1725,12 +1792,12 @@ declare namespace g {
      */
     interface Object2DParameterObject {
         /**
-         * このオブジェクトの横位置。実際の座標位置はscaleX, scaleY, angleの値も考慮する必要がある。
+         * このオブジェクトの横位置。実際の座標位置はscaleX, scaleY, angle, anchorX, anchorYの値も考慮する必要がある。
          * @default 0
          */
         x?: number;
         /**
-         * このオブジェクトの縦位置。実際の座標位置はscaleX, scaleY, angleの値も考慮する必要がある。
+         * このオブジェクトの縦位置。実際の座標位置はscaleX, scaleY, angle, anchorX, anchorYの値も考慮する必要がある。
          * @default 0
          */
         y?: number;
@@ -1771,6 +1838,26 @@ declare namespace g {
          * @default undefined
          */
         compositeOperation?: CompositeOperation;
+        /**
+         * オブジェクトのアンカーの横位置。アンカーについては以下の通り。
+         * * アンカーとして設定した箇所がこのオブジェクトの基点 (位置、拡縮・回転の基点) となる。
+         * * 単位は相対値 (左上端が (0, 0) 中央が (0.5, 0,5) 右下端が (1,1) ) である。
+         * anchorXとanchorYの両方が省略された場合、このオブジェクトの位置 (x, y) は左上端を基準に決定され、拡縮・回転の基点は中央座標となる。
+         * これは前バージョンとの互換性のための挙動である。
+         * anchorX, anchorYのどちらかのみを指定した場合の動作は不定である。
+         * @default undefined
+         */
+        anchorX?: number;
+        /**
+         * オブジェクトのアンカーの縦位置。アンカーについては以下の通り。
+         * * アンカーとして設定した箇所がこのオブジェクトの基点 (位置、拡縮・回転の基点) となる。
+         * * 単位は相対値 (左上端が (0, 0) 中央が (0.5, 0,5) 右下端が (1,1) ) である。
+         * anchorXとanchorYの両方が省略された場合、このオブジェクトの位置 (x, y) は左上端を基準に決定され、拡縮・回転の基点は中央座標となる。
+         * これは前バージョンとの互換性のための挙動である。
+         * anchorX, anchorYのどちらかのみを指定した場合の動作は不定である。
+         * @default undefined
+         */
+        anchorY?: number;
     }
     /**
      * 二次元の幾何的オブジェクト。位置とサイズ (に加えて傾きや透明度も) を持つ。
@@ -1779,13 +1866,13 @@ declare namespace g {
     class Object2D implements CommonArea {
         /**
          * このオブジェクトの横位置。
-         * 初期値は `0` である。実際の座標位置はscaleX, scaleY, angleの値も考慮する必要がある。
+         * 初期値は `0` である。実際の座標位置はscaleX, scaleY, angle, anchorX, anchorYの値も考慮する必要がある。
          * `E` や `Camera2D` においてこの値を変更した場合、 `modified()` を呼び出す必要がある。
          */
         x: number;
         /**
          * このオブジェクトの縦位置。
-         * 初期値は `0` である。実際の座標位置はscaleX, scaleY, angleの値も考慮する必要がある。
+         * 初期値は `0` である。実際の座標位置はscaleX, scaleY, angle, anchorX, anchorYの値も考慮する必要がある。
          * `E` や `Camera2D` においてこの値を変更した場合、 `modified()` を呼び出す必要がある。
          */
         y: number;
@@ -1831,6 +1918,28 @@ declare namespace g {
          * `E` においてこの値を変更した場合、 `modified()` を呼び出す必要がある。
          */
         compositeOperation: CompositeOperation;
+        /**
+         * オブジェクトのアンカーの横位置。アンカーについては以下の通り。
+         * * アンカーとして設定した箇所がこのオブジェクトの基点 (位置、拡縮・回転の基点) となる。
+         * * 単位は相対値 (左上端が (0, 0) 中央が (0.5, 0,5) 右下端が (1,1) ) である。
+         * anchorXとanchorYの両方が省略された場合、このオブジェクトの位置 (x, y) は左上端を基準に決定され、拡縮・回転の基点は中央座標となる。
+         * これは前バージョンとの互換性のための挙動である。
+         * anchorX, anchorYのどちらかのみを指定した場合の動作は不定である。
+         * 初期値は `undefined` である。
+         * `E` や `Camera2D` においてこの値を変更した場合、 `modified()` を呼び出す必要がある。
+         */
+        anchorX: number | undefined;
+        /**
+         * オブジェクトのアンカーの縦位置。アンカーについては以下の通り。
+         * * アンカーとして設定した箇所がこのオブジェクトの基点 (位置、拡縮・回転の基点) となる。
+         * * 単位は相対値 (左上端が (0, 0) 中央が (0.5, 0,5) 右下端が (1,1) ) である。
+         * anchorXとanchorYの両方が省略された場合、このオブジェクトの位置 (x, y) は左上端を基準に決定され、拡縮・回転の基点は中央座標となる。
+         * これは前バージョンとの互換性のための挙動である。
+         * anchorX, anchorYのどちらかのみを指定した場合の動作は不定である。
+         * 初期値は `undefined` である。
+         * `E` や `Camera2D` においてこの値を変更した場合、 `modified()` を呼び出す必要がある。
+         */
+        anchorY: number | undefined;
         /**
          * 変換行列のキャッシュ。 `Object2D` は状態に変更があった時、本値の_modifiedをtrueにする必要がある。
          * 初期値は `undefined` であり、 `getMatrix()` によって必要な時に生成されるため、
@@ -1905,6 +2014,12 @@ declare namespace g {
          */
         scale(scale: number): void;
         /**
+         * オブジェクトのアンカーの位置を設定する。
+         * このメソッドは `anchorX` と `anchorY` を同時に設定するためのユーティリティメソッドである。
+         * `E` や `Camera2D` においてこのメソッドを呼び出した場合、 `modified()` を呼び出す必要がある。
+         */
+        anchor(x: number, y: number): void;
+        /**
          * このオブジェクトの変換行列を得る。
          */
         getMatrix(): Matrix;
@@ -1975,6 +2090,20 @@ declare namespace g {
          * @default undefined
          */
         tag?: any;
+        /**
+         * このエンティティの描画時に利用されるシェーダプログラム。
+         * このエンティティの `renderer#isSupportedShaderProgram()` が偽を返した場合、
+         * `renderer#setShaderProgram()` は呼ばれないことに注意。
+         *
+         * また `g.FilledRect` やその親エンティティに本値を指定した場合、対象の `g.FilledRect` の描画結果は不定である。
+         * これは実装上の制限に基づく現バージョンの仕様である。
+         *
+         * この値に `undefined` を指定した場合、親のシェーダプログラムを利用する。
+         * この値に `null` を指定した場合、明示的にデフォルトのシェーダプログラムを利用する。
+         *
+         * @default undefined
+         */
+        shaderProgram?: ShaderProgram;
     }
     /**
      * akashic-engineに描画される全てのエンティティを表す基底クラス。
@@ -2017,6 +2146,19 @@ declare namespace g {
          * この値はゲームエンジンのロジックからは使用されず、ゲーム開発者は任意の目的に使用してよい。
          */
         tag: any;
+        /**
+         * このエンティティの描画時に利用されるシェーダプログラム。
+         * `isSupportedShaderProgram()` が偽を返す `g.Rendere` で描画される時、 `g.Renderer#setShaderProgram()` は呼ばれないことに注意。
+         *
+         * また `g.FilledRect` やその親エンティティに本値を指定した場合、対象の `g.FilledRect` の描画結果は不定である。
+         * これは実装上の制限に基づく現バージョンの仕様である。
+         *
+         * この値が `undefined` である場合、親のシェーダプログラムが利用される。
+         * この値が `null` である場合、明示的にデフォルトのシェーダプログラムが利用される。
+         *
+         * この値を変更した場合、 `this.modified()` を呼び出す必要がある。
+         */
+        shaderProgram: ShaderProgram;
         /**
          * このEが「映り込む」カメラの集合。
          * 空でない配列が指定されている場合、配列内に存在しないCameraでの描画時にはこのEがスキップされる。
@@ -2219,7 +2361,7 @@ declare namespace g {
          * @private
          */
         _isTargetOperation(e: PointEvent): boolean;
-        private _findTouchableChildren(e);
+        private _findTouchableChildren;
     }
 }
 declare namespace g {
@@ -2232,6 +2374,12 @@ declare namespace g {
      * 内部描画キャッシュを持つ `E` 。
      */
     abstract class CacheableE extends E {
+        /**
+         * _cache のパディングサイズ。
+         *
+         * @private
+         */
+        static PADDING: number;
         /**
          * エンジンが子孫を描画すべきであれば`true`、でなければ`false`を本クラスを継承したクラスがセットする。
          * デフォルト値は`true`となる。
@@ -2254,6 +2402,13 @@ declare namespace g {
          */
         _renderedCamera: Camera;
         /**
+         * 描画されるキャッシュサイズ。
+         * このサイズは _cache のサイズよりも小さくなる場合がある。
+         *
+         * @private
+         */
+        _cacheSize: CommonSize;
+        /**
          * 各種パラメータを指定して `CacheableE` のインスタンスを生成する。
          * @param param このエンティティに対するパラメータ
          */
@@ -2269,6 +2424,11 @@ declare namespace g {
          */
         renderSelf(renderer: Renderer, camera?: Camera): boolean;
         /**
+         * 内部キャッシュから自身の描画を行う。
+         * このメソッドはエンジンから暗黙に呼び出され、ゲーム開発者が呼び出す必要はない。
+         */
+        renderSelfFromCache(renderer: Renderer): void;
+        /**
          * キャッシュの描画が必要な場合にこのメソッドが呼ばれる。
          * 本クラスを継承したエンティティはこのメソッド内で`renderer`に対してキャッシュの内容を描画しなければならない。
          * このメソッドはエンジンから暗黙に呼び出され、ゲーム開発者が呼び出す必要はない。
@@ -2278,6 +2438,13 @@ declare namespace g {
          * 利用している `Surface` を破棄した上で、このエンティティを破棄する。
          */
         destroy(): void;
+        /**
+         * キャッシュのサイズを取得する。
+         * 本クラスを継承したクラスでエンティティのサイズと異なるサイズを利用する場合、このメソッドをオーバーライドする。
+         * このメソッドはエンジンから暗黙に呼び出され、ゲーム開発者が呼び出す必要はない。
+         * このメソッドから得られる値を変更した場合、 `this.invalidate()` を呼び出す必要がある。
+         */
+        calculateCacheSize(): CommonSize;
     }
 }
 declare namespace g {
@@ -2300,7 +2467,7 @@ declare namespace g {
         /**
          * valuesを表す。
          */
-        Values = 4,
+        Values = 4
     }
     /**
      * 一括取得を行う場合のソート順。
@@ -2313,7 +2480,7 @@ declare namespace g {
         /**
          * 降順。
          */
-        Desc = 1,
+        Desc = 1
     }
     /**
      * 条件を表す。
@@ -2330,7 +2497,7 @@ declare namespace g {
         /**
          * 「より小さい」を表す（<）。
          */
-        LessThan = 3,
+        LessThan = 3
     }
     /**
      * Countsリージョンへの書き込み操作種別を表す。
@@ -2343,7 +2510,7 @@ declare namespace g {
         /**
          * デクリメント操作を実行する。
          */
-        Decr = 2,
+        Decr = 2
     }
     /**
      * `StorageWriter#write()` に指定する書き込みオプション。
@@ -2726,13 +2893,13 @@ declare namespace g {
         Standby = 1,
         Active = 2,
         Deactive = 3,
-        BeforeDestroyed = 4,
+        BeforeDestroyed = 4
     }
     enum SceneLoadState {
         Initial = 0,
         Ready = 1,
         ReadyFired = 2,
-        LoadedFired = 3,
+        LoadedFired = 3
     }
     /**
      * シーンを表すクラス。
@@ -3412,7 +3579,7 @@ declare namespace g {
          * @param destroySurface trueを指定した場合、このエンティティが抱える `Surface` も合わせて破棄する
          */
         destroy(destroySurface?: boolean): void;
-        private _invalidateSelf();
+        private _invalidateSelf;
     }
 }
 declare namespace g {
@@ -3454,6 +3621,11 @@ declare namespace g {
          * @default (1000 / game.fps)
          */
         interval?: number;
+        /**
+         * アニメーションをループ再生させるか否か。
+         * @default true
+         */
+        loop?: boolean;
     }
     /**
      * フレームとタイマーによるアニメーション機構を持つ `Sprite` 。
@@ -3493,6 +3665,16 @@ declare namespace g {
          * この値を変更した場合、反映には `this.start()` を呼び出す必要がある。
          */
         interval: number;
+        /**
+         * アニメーションをループ再生させるか否か。
+         * 初期値は `true` である。
+         */
+        loop: boolean;
+        /**
+         * アニメーション終了時にfireされるTrigger。
+         * 本Triggerは loop: false の場合にのみfireされる。
+         */
+        finished: Trigger<void>;
         /**
          * @private
          */
@@ -3543,7 +3725,7 @@ declare namespace g {
          * @private
          */
         _changeFrame(): void;
-        private _modifiedSelf(isBubbling?);
+        private _modifiedSelf;
     }
 }
 declare namespace g {
@@ -3601,7 +3783,7 @@ declare namespace g {
         /**
          * 操作プラグインが通知する操作を表すイベント。
          */
-        Operation = 9,
+        Operation = 9
     }
     /**
      * イベントを表すインターフェース。
@@ -3774,7 +3956,7 @@ declare namespace g {
         Error = 0,
         Warn = 1,
         Info = 2,
-        Debug = 3,
+        Debug = 3
     }
     /**
      * ログ出力情報。
@@ -3800,7 +3982,7 @@ declare namespace g {
     /**
      * デバッグ/エラー用のログ出力機構。
      */
-    class Logger {
+    class Logger implements Destroyable {
         /**
          * この `Logger` に紐づく `Game` 。
          */
@@ -3815,28 +3997,34 @@ declare namespace g {
          * @param game この `Logger` に紐づく `Game` 。
          */
         constructor(game: Game);
+        destroy(): void;
+        destroyed(): boolean;
         /**
          * `LogLevel.Error` のログを出力する。
          * @param message ログメッセージ
          * @param cause 追加の補助情報。省略された場合、 `undefined`
+         * @deprecated このメソッドは非推奨である。ゲーム開発者はこのメソッドではなく単に `console.error()` や `console.log()` を利用すべきである。
          */
         error(message: string, cause?: any): void;
         /**
          * `LogLevel.Warn` のログを出力する。
          * @param message ログメッセージ
          * @param cause 追加の補助情報。省略された場合、 `undefined`
+         * @deprecated このメソッドは非推奨である。ゲーム開発者はこのメソッドではなく単に `console.warn()` や `console.log()` を利用すべきである。
          */
         warn(message: string, cause?: any): void;
         /**
          * `LogLevel.Info` のログを出力する。
          * @param message ログメッセージ
          * @param cause 追加の補助情報。省略された場合、 `undefined`
+         * @deprecated このメソッドは非推奨である。ゲーム開発者はこのメソッドではなく単に `console.info()` や `console.log()` を利用すべきである。
          */
         info(message: string, cause?: any): void;
         /**
          * `LogLevel.Debug` のログを出力する。
          * @param message ログメッセージ
          * @param cause 追加の補助情報。省略された場合、 `undefined`
+         * @deprecated このメソッドは非推奨である。ゲーム開発者はこのメソッドではなく単に `console.debug()` や `console.log()` を利用すべきである。
          */
         debug(message: string, cause?: any): void;
     }
@@ -3875,9 +4063,9 @@ declare namespace g {
          */
         useRealSize?: boolean;
         /**
-         * ヒント。akashic-engineが最適なパフォーマンスを発揮するための情報。`type` が `"audio"` の場合にのみ存在。
+         * ヒント。akashic-engineが最適なパフォーマンスを発揮するための情報。`type` が `"audio"` または `"image"` の場合にのみ存在。
          */
-        hint?: AudioAssetHint;
+        hint?: AudioAssetHint | ImageAssetHint;
     }
     /**
      * Assetの設定を表すインターフェース。
@@ -3922,6 +4110,12 @@ declare namespace g {
         [key: string]: AssetConfiguration;
     };
     /**
+     * require()解決用のエントリポイント
+     */
+    type ModuleMainScriptsMap = {
+        [path: string]: string;
+    };
+    /**
      * AudioSystemの設定を表すインターフェース。
      */
     interface AudioSystemConfiguration {
@@ -3939,6 +4133,12 @@ declare namespace g {
      */
     interface AudioAssetHint {
         streaming?: boolean;
+    }
+    /**
+     * ImageAssetの設定を表すインターフェース。
+     */
+    interface ImageAssetHint {
+        untainted?: boolean;
     }
     /**
      * ゲームの設定を表すインターフェース。
@@ -3986,6 +4186,12 @@ declare namespace g {
          * ここに記述されたファイルのアセットIDは不定である。ゲーム開発者がこのファイルを読み込むためには、相対パスによる (`require()` を用いねばならない)
          */
         globalScripts?: string[];
+        /**
+         * require()解決用ののエントリポイントを格納したテーブル。
+         *
+         * require()の第一引数をキーとした値が本テーブルに存在した場合、require()時にその値をパスとしたスクリプトアセットを評価する。
+         */
+        moduleMainScripts?: ModuleMainScriptsMap;
         /**
          * デフォルトローディングシーンについての指定。
          * 省略時または "default" を指定すると `DefaultLoadingScene` を表示する。
@@ -4176,6 +4382,50 @@ declare namespace g {
          * 画面サイズの変更時にfireされるTrigger。
          */
         resized: Trigger<CommonSize>;
+        /**
+         * スキップ状態の変化時にfireされるTrigger。
+         *
+         * スキップ状態に遷移する時に真、非スキップ状態に遷移する時に偽が与えられる。
+         * この通知は、ゲーム開発者が「スキップ中の演出省略」などの最適化を行うために提供されている。
+         *
+         * この通知のfire頻度は、ゲームの実行状態などに依存して異なりうることに注意。
+         * 例えば多人数プレイされている時、それぞれの環境でfireされ方が異なりうる。
+         * ゲーム開発者は、この通知に起因する処理で、ゲームのグローバルな実行状態を変化させてはならない。
+         */
+        skippingChanged: g.Trigger<boolean>;
+        /**
+         * 直近の `update` の通知が、ローカルティックによるものか否か。
+         *
+         * ただし一度も `update` 通知が起きていない間は真である。
+         * ローカルシーンおよびローカルティック補間シーン以外のシーンにおいては、常に偽。
+         * この値は参照のためにのみ公開されている。ゲーム開発者はこの値を変更すべきではない。
+         */
+        isLastTickLocal: boolean;
+        /**
+         * 直近の `update` の通知時(の直前)に(タイムスタンプ待ちを省略する動作などの影響でエンジンが)省いたローカルティックの数。
+         *
+         * 一度も `update` 通知が起きていない間は `0` である。
+         * ローカルティック補間シーンでない場合、常に `0` であることに注意。
+         *
+         * この値は参照のためにのみ公開されている。ゲーム開発者はこの値を変更すべきではない。
+         */
+        lastOmittedLocalTickCount: number;
+        /**
+         * ゲーム全体で共有するサーフェスアトラス。
+         */
+        surfaceAtlasSet: SurfaceAtlasSet;
+        /**
+         * ゲームが早送りに状態にあるかどうか。
+         *
+         * スキップ状態であれば真、非スキップ状態であれば偽である。
+         * ゲーム開発者は、この値に起因する処理で、ゲームのグローバルな実行状態を変化させてはならない。
+         * この値は参照のためにのみ公開されている。ゲーム開発者はこの値を変更すべきではない。
+         */
+        isSkipping: boolean;
+        /**
+         * ゲームにjoinしているプレイヤーIDの一覧。
+         */
+        joinedPlayerIds: string[];
         /**
          * イベントとTriggerのマップ。
          * @private
@@ -4368,9 +4618,10 @@ declare namespace g {
          * このメソッドは暗黙に呼び出される。ゲーム開発者がこのメソッドを利用する必要はない。
          *
          * 戻り値は呼び出し前後でシーンが変わった(別のシーンに遷移した)場合、真。でなければ偽。
-         * @param advanceAge 偽を与えた場合、`this.age` を進めない。省略された場合、ローカルシーン以外ならageを進める。
+         * @param advanceAge 偽を与えた場合、`this.age` を進めない。
+         * @param omittedTickCount タイムスタンプ待ちを省略する動作などにより、(前回の呼び出し以降に)省かれたローカルティックの数。省略された場合、 `0` 。
          */
-        tick(advanceAge?: boolean): boolean;
+        tick(advanceAge: boolean, omittedTickCount?: number): boolean;
         /**
          * このGameを描画する。
          *
@@ -4414,6 +4665,8 @@ declare namespace g {
          */
         unregister(e: E): void;
         /**
+         * @deprecated 現在このメソッドは呼び出しても何も行わない。
+         *
          * このゲームを離脱する。
          *
          * 多人数プレイの場合、他のクライアントでは `Game#leave` イベントがfireされる。
@@ -4452,12 +4705,13 @@ declare namespace g {
          * エンジンは、イベントフィルタが戻り値として返したイベントを、まるでそのイベントが発生したかのように処理する。
          *
          * イベントフィルタはローカルイベントに対しても適用される。
-         * イベントフィルタはローカルティック補完シーンやローカルシーンの間であっても適用される。
+         * イベントフィルタはローカルティック補間シーンやローカルシーンの間であっても適用される。
          * 複数のイベントフィルタが存在する場合、そのすべてが適用される。適用順は登録の順である。
          *
          * @param filter 追加するイベントフィルタ
+         * @param handleEmpty イベントが存在しない場合でも定期的にフィルタを呼び出すか否か。省略された場合、偽。
          */
-        abstract addEventFilter(filter: EventFilter): void;
+        abstract addEventFilter(filter: EventFilter, handleEmpty?: boolean): void;
         /**
          * イベントフィルタを削除する。
          *
@@ -4498,6 +4752,20 @@ declare namespace g {
          */
         abstract saveSnapshot(snapshot: any, timestamp?: number): void;
         /**
+         * 現在時刻を取得する。
+         *
+         * 値は1970-01-01T00:00:00Zからのミリ秒での経過時刻である。
+         * `Date.now()` と異なり、この値は消化されたティックの数から算出される擬似的な時刻である。
+         */
+        abstract getCurrentTime(): number;
+        /**
+         * このインスタンスがアクティブインスタンスであるかどうか返す。
+         *
+         * ゲーム開発者は、この値の真偽に起因する処理で、ゲームのローカルな実行状態を変更してはならず、
+         * `raiseEvent()` などによって、グローバルな状態を更新する必要がある。
+         */
+        abstract isActiveInstance(): boolean;
+        /**
          * @private
          */
         _fireSceneReady(scene: Scene): void;
@@ -4532,6 +4800,12 @@ declare namespace g {
          */
         _reset(param?: GameResetParameterObject): void;
         /**
+         * ゲームを破棄する。
+         * エンジンユーザとコンテンツに開放された一部プロパティ(external, vars)は維持する点に注意。
+         * @private
+         */
+        _destroy(): void;
+        /**
          * ゲームを開始する。
          *
          * 存在するシーンをすべて(_initialScene以外; あるなら)破棄し、グローバルアセットを読み込み、完了後ゲーム開発者の実装コードの実行を開始する。
@@ -4560,8 +4834,9 @@ declare namespace g {
         abstract _leaveGame(): void;
         /**
          * @private
+         * エラーを出してゲームを途中終了させるメソッド。
          */
-        _terminateGame(): void;
+        _abortGame(): void;
         /**
          * 要求されたシーン遷移を実行する。
          *
@@ -4572,9 +4847,12 @@ declare namespace g {
          * @private
          */
         _flushSceneChangeRequests(): void;
-        private _doPopScene(preserveCurrent, fireSceneChanged);
-        private _start();
-        private _doPushScene(scene, loadingScene?);
+        _handleSkippingChanged(isSkipping: boolean): void;
+        _handleJoinEvent(event: JoinEvent): void;
+        _handleLeaveEvent(event: LeaveEvent): void;
+        private _doPopScene;
+        private _start;
+        private _doPushScene;
     }
 }
 declare namespace g {
@@ -4706,6 +4984,26 @@ declare namespace g {
 }
 declare namespace g {
     /**
+     * 描画領域のピクセル情報を表すインターフェース。
+     */
+    interface ImageData extends CommonSize {
+        /**
+         * 描画領域の横幅のピクセル数。
+         */
+        width: number;
+        /**
+         * 描画領域の縦幅のピクセル数。
+         */
+        height: number;
+        /**
+         * 描画領域のピクセル情報を、RGBAの各色成分を1byteとした一次配列 (Non-Premultiplied Alpha) として返す。
+         * 各要素の順番は、描画領域の左上から右へ進み、右端に到達したら下の列を走査したものとなる。
+         */
+        data: Uint8ClampedArray;
+    }
+}
+declare namespace g {
+    /**
      * ゲームの描画を行うクラス。
      *
      * 描画は各エンティティによって行われる。通常、ゲーム開発者が本クラスを利用する必要はない。
@@ -4753,6 +5051,28 @@ declare namespace g {
         abstract setCompositeOperation(operation: CompositeOperation): void;
         abstract setTransform(matrix: number[]): void;
         abstract setOpacity(opacity: number): void;
+        /**
+         * 本Rendererがシェーダ機能をサポートしているかを返す。
+         */
+        abstract isSupportedShaderProgram(): boolean;
+        /**
+         * 本Rendererにシェーダを設定する。
+         * 引数に `null` が指定された場合、本Rendererに設定されているシェーダの設定を解除する。
+         */
+        abstract setShaderProgram(shaderProgram: ShaderProgram | null): void;
+        /**
+         * 本Rendererの描画内容を表すImageDataを取得する。
+         * 引数は CanvasRenderingContext2D#getImageData() と同様である。
+         * 本メソッドの呼び出しは `Renderer#end()` から `Renderer#begin()` の間でなければならない。
+         * NOTE: 実行環境によっては戻り値が `null` または `undefined` となりえることに注意。
+         */
+        abstract _getImageData(sx: number, sy: number, sw: number, sh: number): ImageData;
+        /**
+         * 本Rendererの描画内容を上書きする。
+         * 引数は CanvasRenderingContext2D#putImageData() と同様である。
+         * 本メソッドの呼び出しは `Renderer#end()` から `Renderer#begin()` の間でなければならない。
+         */
+        abstract _putImageData(imageData: ImageData, dx: number, dy: number, dirtyX?: number, dirtyY?: number, dirtyWidth?: number, dirtyHeight?: number): void;
         end(): void;
     }
 }
@@ -4939,6 +5259,16 @@ declare namespace g {
          */
         _game: Game;
         /**
+         * @private
+         * 最初の文字が描画の基準点から左にはみだす量。
+         */
+        _overhangLeft: number;
+        /**
+         * @private
+         * 最後の文字が glyph.advanceWidth から右にはみだす量。
+         */
+        _overhangRight: number;
+        /**
          * 各種パラメータを指定して `Label` のインスタンスを生成する。
          * @param param このエンティティに指定するパラメータ
          */
@@ -4958,13 +5288,18 @@ declare namespace g {
          * このメソッドを呼び出し後、描画キャッシュの再構築が行われ、各 `Renderer` に描画内容の変更が反映される。
          */
         invalidate(): void;
+        /**
+         * Label自身の描画を行う。
+         */
+        renderSelfFromCache(renderer: Renderer): void;
         renderCache(renderer: Renderer): void;
         /**
          * このエンティティを破棄する。
          * 利用している `BitmapFont` の破棄は行わないため、 `BitmapFont` の破棄はコンテンツ製作者が明示的に行う必要がある。
          */
         destroy(): void;
-        private _invalidateSelf();
+        private _invalidateSelf;
+        private _outputOfWarnLogWithNoGlyph;
     }
 }
 declare namespace g {
@@ -5320,16 +5655,16 @@ declare namespace g {
      */
     interface OperationPluginStatic {
         /**
+         * 実行環境がこのpluginをサポートしているか返す。
+         */
+        isSupported: () => boolean;
+        /**
          * OperationPluginを生成する。
          * @param game このプラグインに紐づく `Game`
          * @param viewInfo このプラグインが参照すべきviewの情報。環境によっては `null` でありうる。
          * @param option game.jsonに指定されたこのプラグイン向けのオプション
          */
         new (game: Game, viewInfo: OperationPluginViewInfo, option?: any): OperationPlugin;
-        /**
-         * 実行環境がこのpluginをサポートしているか返す。
-         */
-        isSupported: () => boolean;
     }
 }
 declare namespace g {
@@ -5442,8 +5777,8 @@ declare namespace g {
         initialize(): void;
         destroy(): void;
         stopAll(): void;
-        private _doAutoStart();
-        private _loadOperationPlugins();
+        private _doAutoStart;
+        private _loadOperationPlugins;
     }
 }
 declare namespace g {
@@ -5465,6 +5800,45 @@ declare namespace g {
 }
 declare namespace g {
     /**
+     * テキストの計測情報。
+     */
+    interface TextMetrix {
+        width: number;
+        actualBoundingBoxLeft: number;
+        actualBoundingBoxRight: number;
+    }
+}
+declare namespace g {
+    /**
+     * フォント。
+     */
+    abstract class Font implements Destroyable {
+        /**
+         * フォントサイズ。
+         *
+         * この値は参照のためにのみ公開されている。ゲーム開発者はこの値を変更すべきではない。
+         */
+        size: number;
+        /**
+         * グリフの取得。
+         *
+         * 取得に失敗するとnullが返る。
+         *
+         * @param code 文字コード
+         */
+        abstract glyphForCharacter(code: number): Glyph;
+        abstract destroy(): void;
+        abstract destroyed(): boolean;
+        /**
+         * 対象の文字列を一行で描画した際の計測情報を返す。
+         *
+         * @param text 文字列
+         */
+        measureText(text: string): TextMetrix;
+    }
+}
+declare namespace g {
+    /**
      * 文字列描画のフォントウェイト。
      */
     enum FontWeight {
@@ -5475,81 +5849,14 @@ declare namespace g {
         /**
          * 太字のフォントウェイト。
          */
-        Bold = 1,
-    }
-    /**
-     * SurfaceAtlasの空き領域管理クラス。
-     *
-     * 本クラスのインスタンスをゲーム開発者が直接生成することはなく、ゲーム開発者が利用する必要もない。
-     */
-    class SurfaceAtlasSlot {
-        x: number;
-        y: number;
-        width: number;
-        height: number;
-        prev: SurfaceAtlasSlot;
-        next: SurfaceAtlasSlot;
-        constructor(x: number, y: number, width: number, height: number);
-    }
-    /**
-     * サーフェスアトラス。
-     *
-     * 与えられたサーフェスの指定された領域をコピーし一枚のサーフェスにまとめる。
-     *
-     * 本クラスのインスタンスをゲーム開発者が直接生成することはなく、ゲーム開発者が利用する必要もない。
-     */
-    class SurfaceAtlas implements Destroyable {
-        /**
-         * @private
-         */
-        _surface: Surface;
-        /**
-         * @private
-         */
-        _emptySurfaceAtlasSlotHead: SurfaceAtlasSlot;
-        /**
-         * @private
-         */
-        _accessScore: number;
-        /**
-         * @private
-         */
-        _usedRectangleAreaSize: CommonSize;
-        constructor(surface: Surface);
-        /**
-         * @private
-         */
-        _acquireSurfaceAtlasSlot(width: number, height: number): SurfaceAtlasSlot;
-        /**
-         * @private
-         */
-        _updateUsedRectangleAreaSize(slot: SurfaceAtlasSlot): void;
-        /**
-         * サーフェスの追加。
-         *
-         * @param surface サーフェスアトラス上に配置される画像のサーフェス。
-         * @param rect サーフェス上の領域を表す矩形。この領域内の画像がサーフェスアトラス上に複製・配置される。
-         */
-        addSurface(surface: Surface, rect: CommonArea): SurfaceAtlasSlot;
-        /**
-        * このSurfaceAtlasの破棄を行う。
-        * 以後、このSurfaceを利用することは出来なくなる。
-        */
-        destroy(): void;
-        /**
-         * このSurfaceAtlasが破棄済であるかどうかを判定する。
-         */
-        destroyed(): boolean;
-        /**
-         * _surfaceを複製する。
-         *
-         * 複製されたSurfaceは文字を格納するのに必要な最低限のサイズになる。
-         */
-        duplicateSurface(resourceFactory: ResourceFactory): Surface;
+        Bold = 1
     }
     /**
      * `DynamicFont` のコンストラクタに渡すことができるパラメータ。
      * 各メンバの詳細は `DynamicFont` の同名メンバの説明を参照すること。
+     * パラメータのsurfaceAtlasSetが存在する場合は、パラメータのsurfaceAtlasSetを使用する。
+     * surfaceAtlasSetが存在せず、DynamicFontHintが存在する場合、DynamicFontが管理するSurfaceAtlasSetを使用する。
+     * surfaceAtlasSetが存在せず、DynamicFontHintが存在しない場合、gameが持つ共通のSurfaceAtlasSetを使用する。
      */
     interface DynamicFontParameterObject {
         /**
@@ -5597,6 +5904,11 @@ declare namespace g {
          * @default false
          */
         strokeOnly?: boolean;
+        /**
+         * サーフェスアトラスセット
+         * @default undefined
+         */
+        surfaceAtlasSet?: SurfaceAtlasSet;
     }
     /**
      * DynamicFontが効率よく動作するためのヒント。
@@ -5604,27 +5916,7 @@ declare namespace g {
      * ゲーム開発者はDynamicFontが効率よく動作するための各種初期値・最大値などを
      * 提示できる。DynamicFontはこれを参考にするが、そのまま採用するとは限らない。
      */
-    interface DynamicFontHint {
-        /**
-         * 初期アトラス幅。
-         */
-        initialAtlasWidth?: number;
-        /**
-         * 初期アトラス高さ。
-         */
-        initialAtlasHeight?: number;
-        /**
-         * 最大アトラス幅。
-         */
-        maxAtlasWidth?: number;
-        /**
-         * 最大アトラス高さ。
-         */
-        maxAtlasHeight?: number;
-        /**
-         * 最大アトラス数。
-         */
-        maxAtlasNum?: number;
+    interface DynamicFontHint extends SurfaceAtlasSetHint {
         /**
          * あらかじめグリフを生成する文字のセット。
          */
@@ -5637,7 +5929,7 @@ declare namespace g {
     /**
      * ビットマップフォントを逐次生成するフォント。
      */
-    class DynamicFont implements Font {
+    class DynamicFont extends Font {
         /**
          * フォントファミリ。
          *
@@ -5697,19 +5989,15 @@ declare namespace g {
         /**
          * @private
          */
-        _atlases: SurfaceAtlas[];
-        /**
-         * @private
-         */
-        _currentAtlasIndex: number;
-        /**
-         * @private
-         */
         _destroyed: boolean;
         /**
          * @private
          */
-        _atlasSize: CommonSize;
+        _isSurfaceAtlasSetOwner: boolean;
+        /**
+         * @private
+         */
+        _atlasSet: SurfaceAtlasSet;
         /**
          * 各種パラメータを指定して `DynamicFont` のインスタンスを生成する。
          * @param param `DynamicFont` に設定するパラメータ
@@ -5736,19 +6024,309 @@ declare namespace g {
          * @param missingGlyph `BitmapFont#map` に存在しないコードポイントの代わりに表示するべき文字。最初の一文字が用いられる。
          */
         asBitmapFont(missingGlyphChar?: string): BitmapFont;
+        destroy(): void;
+        destroyed(): boolean;
+    }
+}
+declare namespace g {
+    /**
+     * `BitmapFont` のコンストラクタに渡すことができるパラメータ。
+     * 各メンバの詳細は `BitmapFont` の同名メンバの説明を参照すること。
+     */
+    interface BitmapFontParameterObject {
+        /**
+         * 文字データとして利用する画像を表す `Surface` または `Asset`。文字を敷き詰めたもの。
+         */
+        src: Surface | Asset;
+        /**
+         * 各文字から画像上の位置・サイズなどを特定する情報。コードポイントから `GlyphArea` への写像。
+         */
+        map: {
+            [key: string]: GlyphArea;
+        };
+        /**
+         * `map` で指定を省略した文字に使われる、デフォルトの文字の幅。
+         */
+        defaultGlyphWidth: number;
+        /**
+         * `map` で指定を省略した文字に使われる、デフォルトの文字の高さ
+         */
+        defaultGlyphHeight: number;
+        /**
+         * `map` に存在しないコードポイントの代わりに表示するべき文字の `GlyphArea` 。
+         * @default undefined
+         */
+        missingGlyph?: GlyphArea;
+    }
+    /**
+     * ラスタ画像によるフォント。
+     */
+    class BitmapFont extends Font {
+        surface: Surface;
+        defaultGlyphWidth: number;
+        defaultGlyphHeight: number;
+        map: {
+            [key: string]: GlyphArea;
+        };
+        missingGlyph: GlyphArea;
+        size: number;
+        /**
+         * 各種パラメータを指定して `BitmapFont` のインスタンスを生成する。
+         * @param param `BitmapFont` に設定するパラメータ
+         */
+        constructor(param: BitmapFontParameterObject);
+        /**
+         * コードポイントに対応するグリフを返す。
+         * @param code コードポイント
+         */
+        glyphForCharacter(code: number): Glyph;
+        /**
+         * 利用している `Surface` を破棄した上で、このフォントを破棄する。
+         */
+        destroy(): void;
+        /**
+         * 破棄されたオブジェクトかどうかを判定する。
+         */
+        destroyed(): boolean;
+    }
+}
+declare namespace g {
+    /**
+     * SurfaceAtlasの空き領域管理クラス。
+     *
+     * 本クラスのインスタンスをゲーム開発者が直接生成することはなく、ゲーム開発者が利用する必要もない。
+     */
+    class SurfaceAtlasSlot {
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+        prev: SurfaceAtlasSlot;
+        next: SurfaceAtlasSlot;
+        constructor(x: number, y: number, width: number, height: number);
+    }
+    /**
+     * サーフェスアトラス。
+     *
+     * 与えられたサーフェスの指定された領域をコピーし一枚のサーフェスにまとめる。
+     *
+     * 本クラスのインスタンスをゲーム開発者が直接生成することはなく、ゲーム開発者が利用する必要もない。
+     */
+    class SurfaceAtlas implements Destroyable {
         /**
          * @private
          */
-        _removeLowUseAtlas(): SurfaceAtlas;
+        _surface: Surface;
         /**
+         * @private
+         */
+        _emptySurfaceAtlasSlotHead: SurfaceAtlasSlot;
+        /**
+         * @private
+         */
+        _accessScore: number;
+        /**
+         * @private
+         */
+        _usedRectangleAreaSize: CommonSize;
+        constructor(surface: Surface);
+        /**
+         * @private
+         */
+        _acquireSurfaceAtlasSlot(width: number, height: number): SurfaceAtlasSlot;
+        /**
+         * @private
+         */
+        _updateUsedRectangleAreaSize(slot: SurfaceAtlasSlot): void;
+        /**
+         * サーフェスの追加。
+         *
+         * @param glyph グリフのサーフェスが持つ情報をSurfaceAtlasへ配置
+         */
+        addSurface(glyph: g.Glyph): SurfaceAtlasSlot;
+        /**
+         * このSurfaceAtlasの破棄を行う。
+         * 以後、このSurfaceを利用することは出来なくなる。
+         */
+        destroy(): void;
+        /**
+         * このSurfaceAtlasが破棄済であるかどうかを判定する。
+         */
+        destroyed(): boolean;
+        /**
+         * _surfaceを複製する。
+         *
+         * 複製されたSurfaceは文字を格納するのに必要な最低限のサイズになる。
+         */
+        duplicateSurface(resourceFactory: ResourceFactory): Surface;
+    }
+    /**
+     * SurfaceAtlasが効率よく動作するためのヒント。
+     *
+     * ゲーム開発者はSurfaceAtlasが効率よく動作するための各種初期値・最大値などを提示できる。
+     * SurfaceAtlasはこれを参考にするが、そのまま採用するとは限らない。
+     */
+    interface SurfaceAtlasSetHint {
+        /**
+         * 初期アトラス幅。
+         */
+        initialAtlasWidth?: number;
+        /**
+         * 初期アトラス高さ。
+         */
+        initialAtlasHeight?: number;
+        /**
+         * 最大アトラス幅。
+         */
+        maxAtlasWidth?: number;
+        /**
+         * 最大アトラス高さ。
+         */
+        maxAtlasHeight?: number;
+        /**
+         * 最大アトラス保持数。
+         */
+        maxAtlasNum?: number;
+    }
+    /**
+     * SurfaceAtlasSet のコンストラクタに渡すことができるパラメータ。
+     */
+    interface SurfaceAtlasSetParameterObject {
+        /**
+         * ゲームインスタンス。
+         */
+        game: Game;
+        /**
+         * ヒント。
+         *
+         * 詳細は `SurfaceAtlasSetHint` を参照。
+         */
+        hint?: SurfaceAtlasSetHint;
+    }
+    /**
+     * 削除対象のデータ
+     */
+    interface RemoveAtlasData {
+        /**
+         * 削除対象のSurfaceAtlas
+         */
+        surfaceAtlases: SurfaceAtlas[];
+        /**
+         * 削除対象のグリフ
+         */
+        glyphs: Glyph[][];
+    }
+    /**
+     * DynamicFontで使用される、SurfaceAtlasを管理する。
+     */
+    class SurfaceAtlasSet implements Destroyable {
+        /**
+         * SurfaceAtlas最大保持数初期値
+         */
+        static INITIAL_MAX_SURFACEATLAS_NUM: number;
+        /**
+         * @private
+         */
+        _surfaceAtlases: SurfaceAtlas[];
+        /**
+         * @private
+         */
+        _atlasGlyphsTable: Glyph[][];
+        /**
+         * @private
+         */
+        _maxAtlasNum: number;
+        /**
+         * @private
+         */
+        _resourceFactory: ResourceFactory;
+        /**
+         * @private
+         */
+        _atlasSize: CommonSize;
+        /**
+         * @private
+         */
+        _currentAtlasIndex: number;
+        constructor(params: SurfaceAtlasSetParameterObject);
+        /**
+         * @private
+         */
+        _deleteAtlas(delteNum: number): void;
+        /**
+         * 使用度の低いサーフェスアトラスを配列から削除する。
+         * @private
+         */
+        _removeLeastFrequentlyUsedAtlas(removedNum: number): RemoveAtlasData;
+        /**
+         * 空き領域のあるSurfaceAtlasを探索する。
+         * glyphが持つ情報をSurfaceAtlasへ移動し、移動したSurfaceAtlasの情報でglyphを置き換える。
+         * @private
+         */
+        _moveGlyphSurface(glyph: Glyph): SurfaceAtlas;
+        /**
+         * サーフェスアトラスの再割り当てを行う。
          * @private
          */
         _reallocateAtlas(): void;
         /**
-         * @private
+         * サーフェスアトラスを追加する。
+         *
+         * 保持している_surfaceAtlasesの数が最大値以上の場合、削除してから追加する。
+         *
+         * このメソッドは、このSurfaceAtlasSetに紐づいている `DynamnicFont` の `constructor` から暗黙に呼び出される。
+         * 通常、ゲーム開発者がこのメソッドを呼び出す必要はない。
          */
-        _addToAtlas(glyph: Glyph): SurfaceAtlas;
+        addAtlas(): void;
+        /**
+         * 引数で指定されたindexのサーフェスアトラスを取得する。
+         *
+         * このメソッドは、このSurfaceAtlasSetに紐づいている `DynamnicFont` の `glyphForCharacter()` から暗黙に呼び出される。
+         * 通常、ゲーム開発者がこのメソッドを呼び出す必要はない。
+         * @param index 取得対象のインデックス
+         */
+        getAtlas(index: number): SurfaceAtlas;
+        /**
+         * サーフェスアトラスの保持数を取得する。
+         *
+         * このメソッドは、このSurfaceAtlasSetに紐づいている `DynamnicFont` の `glyphForCharacter()` から暗黙に呼び出される。
+         * 通常、ゲーム開発者がこのメソッドを呼び出す必要はない。
+         */
+        getAtlasNum(): number;
+        /**
+         * 最大サーフェスアトラス保持数取得する。
+         */
+        getMaxAtlasNum(): number;
+        /**
+         * 最大アトラス保持数設定する。
+         *
+         * 設定された値が、現在保持している_surfaceAtlasesの数より大きい場合、
+         * removeLeastFrequentlyUsedAtlas()で設定値まで削除する。
+         * @param value 設定値
+         */
+        changeMaxAtlasNum(value: number): void;
+        /**
+         * サーフェスアトラスのサイズを取得する。
+         *
+         * このメソッドは、このSurfaceAtlasSetに紐づいている `DynamnicFont` の `glyphForCharacter()` から暗黙に呼び出される。
+         * 通常、ゲーム開発者がこのメソッドを呼び出す必要はない。
+         */
+        getAtlasSize(): CommonSize;
+        /**
+         * サーフェスアトラスにグリフを追加する。
+         *
+         * このメソッドは、このSurfaceAtlasSetに紐づいている `DynamnicFont` の `glyphForCharacter()` から暗黙に呼び出される。
+         * 通常、ゲーム開発者がこのメソッドを呼び出す必要はない。
+         * @param glyph グリフ
+         */
+        addGlyph(glyph: Glyph): SurfaceAtlas;
+        /**
+         * このインスタンスを破棄する。
+         */
         destroy(): void;
+        /**
+         * このインスタンスが破棄済みであるかどうかを返す。
+         */
         destroyed(): boolean;
     }
 }
@@ -5773,6 +6351,10 @@ declare namespace g {
          */
         _playbackRate: number;
         constructor(game: Game);
+        /**
+         * @private
+         */
+        _reset(): void;
         /**
          * @private
          */
@@ -5804,6 +6386,38 @@ declare namespace g {
          * 先に描画された領域を全て無視して描画する。
          */
         Copy = 3,
+        /**
+         * 先に描画された領域と重なった部分に描画を行い、それ以外の部分を透明にする。
+         * 環境により、描画結果が大きく異なる可能性があるため、試験的導入である。
+         */
+        ExperimentalSourceIn = 4,
+        /**
+         * 先に描画された領域と重なっていない部分に描画を行い、それ以外の部分を透明にする。
+         * 環境により、描画結果が大きく異なる可能性があるため、試験的導入である。
+         */
+        ExperimentalSourceOut = 5,
+        /**
+         * 描画する領域だけを表示し、先に描画された領域と重なった部分は描画先を表示する。
+         * 環境により、描画結果が大きく異なる可能性があるため、試験的導入である。
+         */
+        ExperimentalDestinationAtop = 6,
+        /**
+         * 先に描画された領域と重なっていない部分を透明にし、重なった部分は描画先を表示する。
+         * 環境により、描画結果が大きく異なる可能性があるため、試験的導入である。
+         */
+        ExperimentalDestinationIn = 7,
+        /**
+         * 描画する領域を透明にする。
+         */
+        DestinationOut = 8,
+        /**
+         * 先に描画された領域の下に描画する。
+         */
+        DestinationOver = 9,
+        /**
+         * 先に描画された領域と重なった部分のみ透明にする。
+         */
+        Xor = 10
     }
 }
 declare namespace g {
@@ -5895,27 +6509,6 @@ declare namespace g {
 }
 declare namespace g {
     /**
-     * フォント。
-     */
-    interface Font extends Destroyable {
-        /**
-         * フォントサイズ。
-         *
-         * この値は参照のためにのみ公開されている。ゲーム開発者はこの値を変更すべきではない。
-         */
-        size: number;
-        /**
-         * グリフの取得。
-         *
-         * 取得に失敗するとnullが返る。
-         *
-         * @param code 文字コード
-         */
-        glyphForCharacter(code: number): Glyph;
-    }
-}
-declare namespace g {
-    /**
      * ゲームのエントリポイントに渡される引数。
      */
     interface GameMainParameterObject {
@@ -5927,12 +6520,13 @@ declare namespace g {
          */
         snapshot?: any;
         /**
-         * ローカル起動時引数。
+         * 起動引数。
          */
         args?: any;
         /**
          * グローバル起動引数。
          * `snapshot` が指定される場合は常に指定されない。
+         * この値は現在使用されていない。
          */
         globalArgs?: any;
     }
@@ -5956,7 +6550,7 @@ declare namespace g {
          * 消化すべきティックがない場合にローカルティックを受け取る。
          * ローカルティック補間シーン。
          */
-        InterpolateLocal = 2,
+        InterpolateLocal = 2
     }
 }
 declare namespace g {
@@ -5971,6 +6565,14 @@ declare namespace g {
     class NinePatchSurfaceEffector implements SurfaceEffector {
         game: Game;
         borderWidth: CommonRect;
+        /**
+         * @private
+         */
+        _surface: Surface;
+        /**
+         * @private
+         */
+        _beforeSrcSurface: Surface;
         /**
          * `NinePatchSurfaceEffector` のインスタンスを生成する。
          * @param game このインスタンスが属する `Game`
@@ -6045,69 +6647,7 @@ declare namespace g {
         /**
          * 等幅。ＭＳ ゴシック等
          */
-        Monospace = 2,
-    }
-}
-declare namespace g {
-    /**
-     * `BitmapFont` のコンストラクタに渡すことができるパラメータ。
-     * 各メンバの詳細は `BitmapFont` の同名メンバの説明を参照すること。
-     */
-    interface BitmapFontParameterObject {
-        /**
-         * 文字データとして利用する画像を表す `Surface` または `Asset`。文字を敷き詰めたもの。
-         */
-        src: Surface | Asset;
-        /**
-         * 各文字から画像上の位置・サイズなどを特定する情報。コードポイントから `GlyphArea` への写像。
-         */
-        map: {
-            [key: string]: GlyphArea;
-        };
-        /**
-         * `map` で指定を省略した文字に使われる、デフォルトの文字の幅。
-         */
-        defaultGlyphWidth: number;
-        /**
-         * `map` で指定を省略した文字に使われる、デフォルトの文字の高さ
-         */
-        defaultGlyphHeight: number;
-        /**
-         * `map` に存在しないコードポイントの代わりに表示するべき文字の `GlyphArea` 。
-         * @default undefined
-         */
-        missingGlyph?: GlyphArea;
-    }
-    /**
-     * ラスタ画像によるフォント。
-     */
-    class BitmapFont implements Font {
-        surface: Surface;
-        defaultGlyphWidth: number;
-        defaultGlyphHeight: number;
-        map: {
-            [key: string]: GlyphArea;
-        };
-        missingGlyph: GlyphArea;
-        size: number;
-        /**
-         * 各種パラメータを指定して `BitmapFont` のインスタンスを生成する。
-         * @param param `BitmapFont` に設定するパラメータ
-         */
-        constructor(param: BitmapFontParameterObject);
-        /**
-         * コードポイントに対応するグリフを返す。
-         * @param code コードポイント
-         */
-        glyphForCharacter(code: number): Glyph;
-        /**
-         * 利用している `Surface` を破棄した上で、このフォントを破棄する。
-         */
-        destroy(): void;
-        /**
-         * 破棄されたオブジェクトかどうかを判定する。
-         */
-        destroyed(): boolean;
+        Monospace = 2
     }
 }
 declare namespace g {
@@ -6192,7 +6732,7 @@ declare namespace g {
         /**
          * em squareの下。
          */
-        Bottom = 3,
+        Bottom = 3
     }
     /**
      * システムフォントで文字列を描画するエンティティ。
@@ -6305,7 +6845,7 @@ declare namespace g {
         /**
          * 右寄せ。
          */
-        Right = 2,
+        Right = 2
     }
 }
 declare namespace g {
@@ -6322,7 +6862,7 @@ declare namespace g {
          * 時間経過は明示的に要求する。
          * この値を用いる `Scene` の間は、 `Game#raiseTick()` を呼び出さない限り時間経過が起きない。
          */
-        Manual = 1,
+        Manual = 1
     }
 }
 declare namespace g {
@@ -6332,8 +6872,8 @@ declare namespace g {
         private _state1U;
         private _state1L;
         static deserialize(ser: XorshiftSerialization): Xorshift;
-        initState(seed: number): void;
         constructor(seed: number);
+        initState(seed: number): void;
         randomInt(): number[];
         random(): number;
         nextInt(min: number, sup: number): number;
@@ -6357,7 +6897,18 @@ declare namespace g {
         private _xorshift;
         static deserialize(ser: XorshiftRandomGeneratorSerialization): XorshiftRandomGenerator;
         constructor(seed: number, xorshift?: XorshiftSerialization);
+        /**
+         * 指定された範囲の整数の疑似乱数を生成する。
+         * 生成される値は両端を含む(i.e. [min, max])ことに注意。
+         *
+         * @param min 生成する疑似乱数の最小値
+         * @param max 生成する疑似乱数の最大値
+         */
         get(min: number, max: number): number;
+        /**
+         * 0 以上 1 未満の疑似乱数を生成する。
+         */
+        generate(): number;
         serialize(): XorshiftRandomGeneratorSerialization;
     }
     /**
@@ -6372,5 +6923,94 @@ declare namespace g {
          * @private
          */
         _xorshift: XorshiftSerialization;
+    }
+}
+declare namespace g {
+    /**
+     * `ShaderProgram` のコンストラクタに渡すことができるパラメータ。
+     * 各メンバの詳細は `ShaderProgram` の同名メンバの説明を参照すること。
+     */
+    interface ShaderProgramParameterObject {
+        /**
+         * フラグメントシェーダの文字列。
+         *
+         * フラグメントシェーダは GLSL 1.0 に準拠した記述でなければならない。
+         * またフラグメントシェーダには以下の varying, uniform 値がエンジンによって与えられる。
+         * * uniform float uAlpha
+         *   * 描画時の透過度
+         * * uniform sampler2D uSampler
+         *   * 描画元テクスチャ番号
+         * * varying vec2 vTexCoord
+         *   * 描画元テクスチャの座標
+         *   * gl_FragColor = texture2D(uSampler, vTexCoord); のような形で描画元テクスチャのピクセルを参照できる
+         *
+         * @default undefined
+         */
+        fragmentShader?: string;
+        /**
+         * フラグメントシェーダに指定可能なuniform値のマップ。
+         * @default undefined
+         */
+        uniforms?: {
+            [key: string]: g.ShaderUniform;
+        };
+    }
+    /**
+     * akashic-engineにおけるシェーダ機能を提供するクラス。
+     * 現バージョンのakashic-engineではフラグメントシェーダのみをサポートする。
+     */
+    class ShaderProgram {
+        /**
+         * フラグメントシェーダの文字列。
+         *
+         * フラグメントシェーダは GLSL 1.0 に準拠した記述でなければならない。
+         * またフラグメントシェーダには以下の varying, uniform 値がエンジンによって与えられる。
+         * * uniform float uAlpha
+         *   * 描画時の透過度
+         * * uniform sampler2D uSampler
+         *   * 描画元テクスチャ番号
+         * * varying vec2 vTexCoord
+         *   * 描画元テクスチャの座標
+         *   * gl_FragColor = texture2D(uSampler, vTexCoord); のような形で描画元テクスチャのピクセルを参照できる
+         *
+         * この値は本クラスの生成時にのみ指定可能であり、直接書き換えてはならない。
+         */
+        fragmentShader: string;
+        /**
+         * 各シェーダに与えられるuniform値のマップ。
+         * この値は本クラスの生成時にのみ指定可能であり、 `ShaderUniform#value` 以外の値を直接書き換えてはならない。
+         */
+        uniforms: {
+            [name: string]: ShaderUniform;
+        };
+        /**
+         * シェーダプログラムの実体。
+         * @private
+         */
+        _program: any;
+        /**
+         * 各種パラメータを指定して `ShaderProgram` のインスタンスを生成する。
+         * @param param `ShaderProgram` に設定するパラメータ
+         */
+        constructor(param: ShaderProgramParameterObject);
+    }
+    type ShaderUniformType = "float" | "int" | "vec2" | "vec3" | "vec4" | "ivec2" | "ivec3" | "ivec4" | "mat2" | "mat3" | "mat4";
+    /**
+     * シェーダに与えるuniform値の情報を表すインターフェース定義。
+     */
+    interface ShaderUniform {
+        /**
+         * uniform値の型。
+         * この値は `ShaderProgram` の生成時にのみ指定可能であり、直接書き換えてはならない。
+         */
+        type: ShaderUniformType;
+        /**
+         * uniform値。
+         * この値の型は `ShaderProgram` の生成時にのみ指定可能であり、変更してはならない。
+         *
+         * 例えば `type` に `"float"` を指定して `value` に `[0.0, 1.0]` のような配列型を指定した場合、
+         * それ以降 `value` に `0.0` のような数値を代入することはできない。
+         */
+        value: number | Int32Array | Float32Array;
     }
 }

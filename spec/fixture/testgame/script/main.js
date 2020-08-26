@@ -19,6 +19,11 @@ function main(param) {
 		scene.update.add(function () {
 			if (g.game.age === 10)
 				g.game.external.send("age10");
+
+			// v2.6.4 までに追加された機能が呼び出せることを確認
+			const r = g.game.random.generate();
+			if (r >= 1)
+				throw new Error("never reach");
 		});
 	});
 	g.game.pushScene(scene);

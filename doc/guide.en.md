@@ -9,7 +9,7 @@ Useful for unit testing.
 Testing contents built on Akashic Engine is not easy in general.
 You can examine the behaviour of your game with `akashic-sandbox` but it is hard to be automated.
 Everytime you modify the code you need to run the game, click appropriate points on the screen,
-wait for a while and finally see the world is not broken.
+wait for a while and finally see the world is totally broken.
 
 This is too painful, especially for library development
 because their expected behaviour is clear and stable in many cases.
@@ -34,6 +34,7 @@ Choose appropriate one.
 |version|@akashic/akashic-sandbox|@akashic/akashic-engine|
 |:-----:|:----------------------:|:---------------------:|
 |0.0.1  |0.13.4                  |2.0.0                  |
+|0.0.2  |1.10.0                  |2.6.4                  |
 
 ## Usage
 

@@ -1,16 +1,21 @@
 {
   "name": "@xnv/headless-akashic",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "A headless version of Akashic Engine",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "scripts": {
     "prepublish": "npm run build",
-    "pick": "node scripts/pick-drivers.js",
+    "pick": "shx rm -rf drivers/ && shx mkdir -p drivers/ && npm run pick:libs && node scripts/pick-drivers.js",
+    "pick:libs": "npm run pick:ae && npm run pick:gdr",
+    "pick:gdr": "browserify -r ./node_modules/@akashic/game-driver/lib/index.js:@akashic/game-driver -x @akashic/akashic-engine -o ./drivers/game-driver.js",
+    "pick:ae": "browserify -r ./node_modules/@akashic/akashic-engine/lib/main.node.js:@akashic/akashic-engine -o ./drivers/akashic-engine.js",
     "build": "tsc -p ./",
     "test": "tsc -p ./spec/ && jasmine"
   },
-  "keywords": ["akashic-engine"],
+  "keywords": [
+    "akashic-engine"
+  ],
   "author": "xnv",
   "license": "MIT",
   "files": [
@@ -25,12 +30,18 @@
     "polyfill.d.ts"
   ],
   "devDependencies": {
-    "@akashic/akashic-engine": "2.0.0",
-    "@akashic/akashic-sandbox": "0.13.4",
+    "@akashic/akashic-engine": "2.6.4",
+    "@akashic/akashic-pdi": "~2.10.0",
+    "@akashic/amflow": "~3.0.0",
+    "@akashic/akashic-sandbox": "0.16.18",
+    "@akashic/game-driver": "1.10.0",
+    "@akashic/playlog": "~3.1.0",
     "@types/jasmine": "~2.6.2",
     "@types/node": "~8.0.47",
+    "browserify": "^16.5.2",
     "jasmine": "~2.8.0",
     "shelljs": "~0.7.8",
+    "shx": "0.3.2",
     "typescript": "~2.5.3"
   }
 }

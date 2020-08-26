@@ -17,4 +17,8 @@ export class NullRenderer extends g.Renderer {
 	setCompositeOperation(operation: g.CompositeOperation): void {}
 	setTransform(matrix: number[]): void {}
 	setOpacity(opacity: number): void {}
+	isSupportedShaderProgram(): boolean { return false; }
+	setShaderProgram(shaderProgram: g.ShaderProgram | null): void {}
+	_getImageData(sx: number, sy: number, sw: number, sh: number): g.ImageData { return null; }
+	_putImageData(imageData: g.ImageData, dx: number, dy: number, dirtyX?: number, dirtyY?: number, dirtyWidth?: number, dirtyHeight?: number): void {}
 }
