@@ -1,5 +1,7 @@
 # headless-akashic
 
+> Japanese Documentation is also [available (ja)][guide-ja]. 日本語の文書は[こちら (ja)][guide-ja].
+
 **headless-akashic** is a headless version of [Akashic Sandbox (ja)][sandbox].
 You can run games using [Akashic Engine (ja)][ae] on [Node.js][node], without Web browsers.
 Useful for unit testing.

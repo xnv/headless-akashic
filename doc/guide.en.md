@@ -72,7 +72,7 @@ A more useful `g.Renderer` is planned to be implemented.
 
 To use in unit test code, we need a bare `g.Game` instance and `g` without script assets execution.
 
-When `Context` is instantiated without `gameDir` properties, it launches an empty game.
+When `Context` is instantiated without the `gameDir` property, it launches an empty game.
 Its game instance can be obtained with `start()`.
 `Context#start()` returns a `Promise` resolved with the game instance.
 
