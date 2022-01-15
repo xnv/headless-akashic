@@ -40,7 +40,7 @@
     "@types/node": "~8.0.47",
     "browserify": "^16.5.2",
     "jasmine": "~2.8.0",
-    "shelljs": "~0.7.8",
+    "shelljs": "~0.8.5",
     "shx": "0.3.2",
     "typescript": "~2.5.3"
   }
