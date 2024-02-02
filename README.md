@@ -1,5 +1,12 @@
 # headless-akashic
 
+## DEPRECATED
+
+**Now the headless runner of Akashic Engine is [officially provided][official] with more generic API.
+This repository is deprecated.**
+
+## Intro.
+
 > Japanese Documentation is also [available (ja)][guide-ja]. 日本語の文書は[こちら (ja)][guide-ja].
 
 **headless-akashic** is a headless version of [Akashic Sandbox (ja)][sandbox].
@@ -28,6 +35,7 @@ MIT. See [LICENSE][license].
 Some files in the `drivers/` directory are derived from [Akashic Sandbox (ja)][sandbox].
 See [LICENSE-DRIVERS][license-drivers] for detail.
 
+[official]: https://github.com/akashic-games/headless-akashic
 [sandbox]: https://github.com/akashic-games/akashic-sandbox
 [ae]: https://akashic-games.github.io/
 [node]: https://nodejs.org/
